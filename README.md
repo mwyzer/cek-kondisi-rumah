@@ -2,6 +2,16 @@
 
 Penilaian kondisi rumah otomatis dari foto. Pengguna mengunggah foto bagian rumah, AI (Claude) menilai 8 komponen bangunan dengan skor 1–5, lalu aplikasi menghitung indeks kondisi, tingkat kerusakan, kategori (Baik / Rusak Ringan / Sedang / Berat), serta prioritas perbaikan dan kisaran biaya. Setiap laporan disimpan dan bisa dibuka lagi.
 
+## Tampilan
+
+Halaman utama: unggah foto dan riwayat penilaian.
+
+![Halaman utama dengan riwayat penilaian](docs/dashboard.png)
+
+Laporan: indeks kondisi, analisis foto otomatis, prioritas perbaikan, dan rincian per komponen. Data pada screenshot adalah contoh.
+
+![Laporan kondisi rumah](docs/laporan.png)
+
 ## Menjalankan
 
 1. Salin `.env.example` menjadi `.env.local`, lalu isi **salah satu**:
