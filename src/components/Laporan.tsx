@@ -1,5 +1,5 @@
 import {
-  hitung, KOMPONEN, persen, rpRange, statusSkor, URGENSI,
+  CAKUPAN_MIN, hitung, KOMPONEN, persen, rpRange, statusSkor, URGENSI,
   type Laporan as LaporanData, type Tingkat,
 } from "@/lib/penilaian";
 import type { Penilaian } from "@/lib/db";
@@ -79,6 +79,12 @@ export default function Laporan({ p }: { p: Penilaian }) {
             <span className={`chip t-${h.kategori.tingkat}`}>{h.kategori.label}</span>
           </div>
           <p className="summary">{lap.ringkasan}</p>
+          {!h.cukup && (
+            <p className="summary risk" style={{ padding: "10px 12px", marginTop: 12 }}>
+              Baru {h.cakupan}% bobot komponen yang terlihat; indeks butuh minimal {CAKUPAN_MIN}%. Tambahkan foto
+              {" "}atap, lantai, plafon, struktur, atau utilitas, lalu nilai ulang.
+            </p>
+          )}
           <div className="kpis">
             <div className="kpi"><span className="eyebrow">Tingkat kerusakan</span><b>{h.rusak == null ? "—" : persen(h.rusak)}</b></div>
             <div className="kpi"><span className="eyebrow">Estimasi biaya</span><b>{rpRange(h.biayaMin, h.biayaMax)}</b></div>

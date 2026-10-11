@@ -1,6 +1,6 @@
 import "server-only";
 import { generateText, Output, type LanguageModel } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
+import { createAnthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { KOMPONEN, KOMPONEN_IDS, URGENSI_IDS, type InfoBangunan, type Laporan } from "./penilaian";
 
@@ -27,11 +27,16 @@ const laporanSchema = z.object({
   foto_disarankan: z.array(z.string()).describe("Bagian rumah yang perlu difoto tambahan"),
 });
 
-// Model lewat Vercel AI Gateway (AI_GATEWAY_API_KEY), atau langsung ke Anthropic bila hanya ANTHROPIC_API_KEY yang diisi.
+// Model lewat Vercel AI Gateway (AI_GATEWAY_API_KEY), atau endpoint kompatibel Anthropic
+// bila ANTHROPIC_API_KEY diisi (Anthropic langsung, atau DeepSeek dengan ANTHROPIC_BASE_URL).
 function model(): { model: LanguageModel; nama: string } {
   if (!process.env.AI_GATEWAY_API_KEY && process.env.ANTHROPIC_API_KEY) {
     const id = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-5-5";
-    return { model: anthropic(id), nama: id };
+    const provider = createAnthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+      baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
+    });
+    return { model: provider(id), nama: id };
   }
   const id = process.env.AI_MODEL ?? "anthropic/claude-sonnet-5.5";
   return { model: id, nama: id };
@@ -87,6 +92,7 @@ export async function nilaiRumah(
   const m = model();
   const { output } = await generateText({
     model: m.model,
+    maxOutputTokens: 8000,
     output: Output.object({ schema: laporanSchema }),
     messages: [
       {

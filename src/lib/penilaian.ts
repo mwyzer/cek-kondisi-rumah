@@ -73,6 +73,9 @@ export function statusSkor(s: number | null): { label: string; tingkat: Tingkat 
   return { label: "Rusak berat", tingkat: "severe" };
 }
 
+// Di bawah ambang ini (persen bobot komponen yang terlihat) indeks dan kategori tidak ditampilkan
+export const CAKUPAN_MIN = 50;
+
 // Rata-rata berbobot; komponen tak terlihat dikeluarkan dan bobotnya dinormalkan ulang
 export function hitung(lap: Laporan) {
   let w = 0, d = 0, min = 0, max = 0;
@@ -84,14 +87,17 @@ export function hitung(lap: Laporan) {
     w += k.bobot;
     d += k.bobot * RUSAK[c.skor];
   }
-  const rusak = w ? d / w : null;
+  const cakupan = w;
+  const cukup = cakupan >= CAKUPAN_MIN;
+  const rusak = w && cukup ? d / w : null;
   return {
     rusak,
     indeks: rusak == null ? null : Math.round(100 - rusak),
-    cakupan: w,
+    cakupan,
+    cukup,
     biayaMin: min,
     biayaMax: max,
-    kategori: kategori(rusak),
+    kategori: cukup ? kategori(rusak) : { label: "Belum cukup data", tingkat: "na" as const },
   };
 }
 
