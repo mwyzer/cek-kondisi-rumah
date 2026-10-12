@@ -35,11 +35,43 @@ function db() {
           PRIMARY KEY (penilaian_id, urutan)
         )`,
         `CREATE INDEX IF NOT EXISTS penilaian_dibuat ON penilaian(dibuat DESC)`,
+        `CREATE TABLE IF NOT EXISTS pemindaian (
+          id TEXT PRIMARY KEY,
+          penilaian_id TEXT NOT NULL REFERENCES penilaian(id) ON DELETE CASCADE,
+          ruang TEXT NOT NULL,
+          status TEXT NOT NULL,
+          video_url TEXT NOT NULL,
+          splat_url TEXT,
+          call_id TEXT,
+          pesan TEXT,
+          dibuat TEXT NOT NULL,
+          diperbarui TEXT NOT NULL
+        )`,
+        `CREATE INDEX IF NOT EXISTS pemindaian_penilaian ON pemindaian(penilaian_id, dibuat)`,
+        `CREATE TABLE IF NOT EXISTS dataset_gambar (
+          id TEXT PRIMARY KEY,
+          berkas TEXT NOT NULL,
+          lebar INTEGER NOT NULL,
+          tinggi INTEGER NOT NULL,
+          nama_asal TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'belum',
+          kotak TEXT NOT NULL DEFAULT '[]',
+          saran TEXT NOT NULL DEFAULT '[]',
+          dibuat TEXT NOT NULL,
+          diperbarui TEXT NOT NULL
+        )`,
       ],
       "write",
     )
     .then(() => migrasi(client!));
   return { c: client, siap };
+}
+
+// Koneksi siap pakai untuk modul lain (mis. dataset.ts)
+export async function koneksi() {
+  const { c, siap } = db();
+  await siap;
+  return c;
 }
 
 // Kolom yang ditambahkan setelah versi pertama
@@ -136,4 +168,96 @@ export async function daftarPenilaian(limit = 12) {
     kategori: String(x.kategori),
     thumb: x.thumb == null ? null : String(x.thumb),
   }));
+}
+
+// ---------- Pemindaian 3D ----------
+
+export type StatusPemindaian = "antre" | "memproses" | "selesai" | "gagal";
+
+export type Pemindaian = {
+  id: string;
+  penilaianId: string;
+  ruang: string;
+  status: StatusPemindaian;
+  videoUrl: string;
+  splatUrl: string | null;
+  callId: string | null;
+  pesan: string | null;
+  dibuat: string;
+  diperbarui: string;
+};
+
+function kePemindaian(x: Record<string, unknown>): Pemindaian {
+  const s = (v: unknown) => (v == null ? null : String(v));
+  return {
+    id: String(x.id),
+    penilaianId: String(x.penilaian_id),
+    ruang: String(x.ruang),
+    status: String(x.status) as StatusPemindaian,
+    videoUrl: String(x.video_url),
+    splatUrl: s(x.splat_url),
+    callId: s(x.call_id),
+    pesan: s(x.pesan),
+    dibuat: String(x.dibuat),
+    diperbarui: String(x.diperbarui),
+  };
+}
+
+export async function buatPemindaian(p: { id: string; penilaianId: string; ruang: string; videoUrl: string }) {
+  const { c, siap } = db();
+  await siap;
+  const now = new Date().toISOString();
+  await c.execute({
+    sql: `INSERT INTO pemindaian (id, penilaian_id, ruang, status, video_url, dibuat, diperbarui)
+          VALUES (?, ?, ?, 'antre', ?, ?, ?)`,
+    args: [p.id, p.penilaianId, p.ruang, p.videoUrl, now, now],
+  });
+}
+
+export async function perbaruiPemindaian(
+  id: string,
+  ubah: Partial<Pick<Pemindaian, "status" | "splatUrl" | "callId" | "pesan">>,
+) {
+  const { c, siap } = db();
+  await siap;
+  const kolom = { status: "status", splatUrl: "splat_url", callId: "call_id", pesan: "pesan" } as const;
+  const set = Object.entries(ubah).filter(([, v]) => v !== undefined);
+  if (!set.length) return;
+  await c.execute({
+    sql: `UPDATE pemindaian SET ${set.map(([k]) => `${kolom[k as keyof typeof kolom]} = ?`).join(", ")}, diperbarui = ? WHERE id = ?`,
+    args: [...set.map(([, v]) => v as string | null), new Date().toISOString(), id],
+  });
+}
+
+export async function ambilPemindaian(id: string): Promise<Pemindaian | null> {
+  const { c, siap } = db();
+  await siap;
+  const r = await c.execute({ sql: "SELECT * FROM pemindaian WHERE id = ?", args: [id] });
+  return r.rows[0] ? kePemindaian(r.rows[0]) : null;
+}
+
+export async function daftarPemindaian(penilaianId: string): Promise<Pemindaian[]> {
+  const { c, siap } = db();
+  await siap;
+  const r = await c.execute({
+    sql: "SELECT * FROM pemindaian WHERE penilaian_id = ? ORDER BY dibuat",
+    args: [penilaianId],
+  });
+  return r.rows.map(kePemindaian);
+}
+
+// Jumlah pemindaian yang dimulai dalam 24 jam terakhir (untuk batas biaya GPU harian)
+export async function jumlahPemindaian24Jam(): Promise<number> {
+  const { c, siap } = db();
+  await siap;
+  const sejak = new Date(Date.now() - 86_400_000).toISOString();
+  const r = await c.execute({ sql: "SELECT COUNT(*) AS n FROM pemindaian WHERE dibuat >= ?", args: [sejak] });
+  return Number(r.rows[0].n);
+}
+
+export async function adaPenilaian(id: string): Promise<boolean> {
+  const { c, siap } = db();
+  await siap;
+  const r = await c.execute({ sql: "SELECT 1 FROM penilaian WHERE id = ?", args: [id] });
+  return r.rows.length > 0;
 }

@@ -3,6 +3,7 @@
 from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 
+import deteksi
 from analisis import VERSI, FotoTidakValid, analisis_foto
 
 MAX_FOTO = 10
@@ -13,7 +14,7 @@ app = FastAPI(title="Analisis Foto Rumah", version=VERSI)
 
 @app.get("/sehat")
 def sehat() -> dict:
-    return {"ok": True, "versi": VERSI}
+    return {"ok": True, "versi": VERSI, "model": deteksi.info()}
 
 
 @app.post("/analisis")

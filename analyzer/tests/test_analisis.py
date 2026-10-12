@@ -67,6 +67,17 @@ def test_retak_di_antara_nat_tetap_terdeteksi():
     assert r["retak"]["jumlah"] >= 1
 
 
+def test_kotak_saran_label():
+    img = retak_berliku(dinding())  # retak kira-kira dari (200,150) ke kanan bawah
+    r = analisis_foto(jpeg(img), 1)
+    retak = [k for k in r["kotak"] if k["kelas"] == "retak"]
+    assert retak, "retak harus menghasilkan kotak"
+    k = retak[0]
+    assert k["x"] <= 210 and k["y"] <= 160  # kotak mencakup awal retak (koordinat foto asli 1200x900)
+    assert k["x"] + k["w"] <= 1200 and k["y"] + k["h"] <= 900
+    assert analisis_foto(jpeg(dinding()), 1)["kotak"] == []
+
+
 def test_noda_rembesan_terdeteksi():
     img = dinding()
     noda = np.zeros(img.shape[:2], np.float32)

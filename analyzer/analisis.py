@@ -13,6 +13,8 @@ from dataclasses import asdict, dataclass, field
 import cv2
 import numpy as np
 
+import deteksi
+
 VERSI = "cv-0.1"
 SISI_KERJA = 1024
 SISI_OVERLAY = 480
@@ -54,6 +56,15 @@ class Temuan:
 
 
 @dataclass
+class Kotak:
+    kelas: str  # "retak" | "rembesan" — sama dengan id kelas dataset di aplikasi
+    x: int  # piksel foto asli, kiri-atas
+    y: int
+    w: int
+    h: int
+
+
+@dataclass
 class HasilFoto:
     indeks: int
     lebar: int
@@ -62,6 +73,8 @@ class HasilFoto:
     retak: Temuan
     noda: Temuan
     overlay: str  # data URL JPEG
+    kotak: list[Kotak] = field(default_factory=list)  # saran label untuk alat dataset
+    deteksi: list[dict] = field(default_factory=list)  # hasil model RF-DETR: {kelas, skor, x, y, w, h}
 
 
 class FotoTidakValid(ValueError):
@@ -214,19 +227,38 @@ def deteksi_noda(kerja: np.ndarray) -> tuple[Temuan, np.ndarray]:
     return Temuan(jumlah, round(float(hasil.mean()) * 100, 2)), hasil
 
 
-def buat_overlay(kerja: np.ndarray, retak: np.ndarray, noda: np.ndarray) -> str:
+def buat_overlay(kerja: np.ndarray, retak: np.ndarray, noda: np.ndarray, model: list[dict] | None = None, skala: float = 1.0) -> str:
     out = kerja.copy()
-    # Noda: garis tepi oranye
-    kontur, _ = cv2.findContours(noda, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    cv2.drawContours(out, kontur, -1, (0, 140, 255), 3)
-    # Retak: merah tebal agar terlihat setelah diperkecil
-    tebal = cv2.dilate(retak, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)))
-    out[tebal > 0] = (0.35 * out[tebal > 0] + 0.65 * np.array([40, 40, 230])).astype(np.uint8)
+    if model is not None:
+        # Model terlatih aktif: tampilkan kotak deteksinya saja agar tidak bertumpuk dengan heuristik
+        deteksi.gambar_kotak(out, model, skala)
+    else:
+        # Noda: garis tepi oranye
+        kontur, _ = cv2.findContours(noda, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        cv2.drawContours(out, kontur, -1, (0, 140, 255), 3)
+        # Retak: merah tebal agar terlihat setelah diperkecil
+        tebal = cv2.dilate(retak, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)))
+        out[tebal > 0] = (0.35 * out[tebal > 0] + 0.65 * np.array([40, 40, 230])).astype(np.uint8)
     out = ubah_ukuran(out, SISI_OVERLAY)
     ok, buf = cv2.imencode(".jpg", out, [cv2.IMWRITE_JPEG_QUALITY, 72])
     if not ok:
         return ""
     return "data:image/jpeg;base64," + base64.b64encode(buf.tobytes()).decode("ascii")
+
+
+def kotak_dari_mask(mask: np.ndarray, kelas: str, skala: float) -> list[Kotak]:
+    """Kotak pembatas tiap komponen mask, dalam koordinat foto asli."""
+    n, _, stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=8)
+    hasil = []
+    for i in range(1, n):
+        x, y, w, h = (int(v) for v in stats[i, :4])
+        pad = 4  # beri sedikit ruang agar retak tipis tidak terpotong
+        hasil.append(Kotak(
+            kelas,
+            round(max(0, x - pad) / skala), round(max(0, y - pad) / skala),
+            round((w + 2 * pad) / skala), round((h + 2 * pad) / skala),
+        ))
+    return hasil
 
 
 def analisis_foto(data: bytes, indeks: int) -> dict:
@@ -236,6 +268,22 @@ def analisis_foto(data: bytes, indeks: int) -> dict:
     retak, mask_retak = deteksi_retak(kerja)
     noda, mask_noda = deteksi_noda(kerja)
     h, w = asli.shape[:2]
-    return asdict(
-        HasilFoto(indeks, w, h, kualitas, retak, noda, buat_overlay(kerja, mask_retak, mask_noda))
-    )
+    skala = kerja.shape[1] / w
+
+    # Model RF-DETR (bila tersedia) dijalankan pada gambar kerja, lalu koordinatnya dikembalikan ke foto asli
+    dets = None
+    if deteksi.info()["aktif"]:
+        dets = [
+            {**d, "x": round(d["x"] / skala), "y": round(d["y"] / skala), "w": round(d["w"] / skala), "h": round(d["h"] / skala)}
+            for d in deteksi.deteksi(kerja)
+        ]
+
+    if dets is not None:
+        kotak = [Kotak(d["kelas"], d["x"], d["y"], d["w"], d["h"]) for d in dets]
+    else:
+        kotak = kotak_dari_mask(mask_retak, "retak", skala) + kotak_dari_mask(mask_noda, "rembesan", skala)
+    for k in kotak:  # jaga tetap di dalam foto
+        k.w = min(k.w, w - k.x)
+        k.h = min(k.h, h - k.y)
+    overlay = buat_overlay(kerja, mask_retak, mask_noda, dets, skala)
+    return asdict(HasilFoto(indeks, w, h, kualitas, retak, noda, overlay, kotak, dets or []))

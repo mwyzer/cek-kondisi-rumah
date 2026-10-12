@@ -46,16 +46,18 @@ function teksRingkasan(lap: LaporanData, h: ReturnType<typeof hitung>) {
 
 function ringkasAnalisis(p: Penilaian) {
   const a = p.foto.map((f) => f.analisis).filter((x) => x != null);
-  if (!a.length) return { ada: false, ringkasan: "" };
+  if (!a.length) return { ada: false, ringkasan: "", model: false };
   const retak = a.filter((x) => x.retak.jumlah > 0).length;
   const noda = a.filter((x) => x.noda.jumlah > 0).length;
   const kurang = a.filter((x) => !x.kualitas.layak).length;
+  const deteksi = a.reduce((n, x) => n + (x.deteksi?.length ?? 0), 0);
   const bagian = [
+    deteksi > 0 && `${deteksi} kerusakan terdeteksi model`,
     retak ? `${retak} foto dengan indikasi retak` : "tidak ada indikasi retak",
     noda ? `${noda} foto dengan indikasi noda` : "tidak ada indikasi noda",
     kurang && `${kurang} foto kurang layak (buram/gelap)`,
   ].filter(Boolean);
-  return { ada: true, ringkasan: bagian.join(" · ") };
+  return { ada: true, ringkasan: bagian.join(" · "), model: deteksi > 0 };
 }
 
 export default function Laporan({ p }: { p: Penilaian }) {
@@ -108,7 +110,14 @@ export default function Laporan({ p }: { p: Penilaian }) {
         <div className="photos" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}>
           {p.foto.map((f) => <FotoAnalisis key={f.urutan} f={f} />)}
         </div>
-        {cv.ada && (
+        {cv.model && (
+          <p className="foot">
+            Kotak berlabel pada foto bertanda berasal dari model deteksi kerusakan (RF-DETR) yang dilatih dari dataset
+            berlabel; angka di kotak adalah skor keyakinan model. Deteksi bisa keliru, dan penilaian akhir tetap dibuat AI
+            dengan melihat fotonya langsung.
+          </p>
+        )}
+        {cv.ada && !cv.model && (
           <p className="foot">
             Penanda <span className="t-severe">merah</span> = garis kandidat retak, garis tepi{" "}
             <span className="t-mid">oranye</span> = bercak kandidat noda/rembesan. Dideteksi dengan pengolahan citra

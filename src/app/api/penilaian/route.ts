@@ -77,7 +77,9 @@ export async function POST(req: Request) {
         urutan: i + 1,
         label: f.label,
         thumb: thumbs[i],
-        analisis: a ? { indeks: a.indeks, lebar: a.lebar, tinggi: a.tinggi, kualitas: a.kualitas, retak: a.retak, noda: a.noda } : null,
+        analisis: a
+          ? { indeks: a.indeks, lebar: a.lebar, tinggi: a.tinggi, kualitas: a.kualitas, retak: a.retak, noda: a.noda, deteksi: a.deteksi ?? [] }
+          : null,
         overlay,
       };
     }),

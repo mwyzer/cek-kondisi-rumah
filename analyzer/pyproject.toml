@@ -11,6 +11,10 @@ dependencies = [
     "numpy>=2.0",
 ]
 
+[project.optional-dependencies]
+# Model deteksi kerusakan RF-DETR (Apache 2.0). Pasang dengan: uv sync --extra deteksi
+deteksi = ["rfdetr==1.11.0"]
+
 [dependency-groups]
 dev = ["pytest>=8", "httpx>=0.27"]
 

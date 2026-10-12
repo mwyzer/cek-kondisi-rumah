@@ -1,0 +1,24 @@
+[project]
+name = "splat"
+version = "0.1.0"
+description = "Worker pemindaian 3D (Gaussian Splatting) di Modal untuk Cek Kondisi Rumah"
+requires-python = ">=3.11"
+# Dependensi lokal hanya untuk tes langkah tanpa GPU dan untuk `modal deploy`.
+# Dependensi GPU (torch, gsplat, COLMAP, ffmpeg) dipasang di image Modal, lihat app.py.
+dependencies = [
+    "modal==1.5.5",
+    "fastapi==0.141.1",
+    "opencv-python-headless>=4.10",
+    "numpy>=2.0",
+]
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# analisis.py dipakai ulang dari layanan analyzer
+pythonpath = [".", "../analyzer"]

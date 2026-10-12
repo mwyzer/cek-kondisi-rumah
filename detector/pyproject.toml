@@ -1,0 +1,20 @@
+[project]
+name = "detector"
+version = "0.1.0"
+description = "Pelatihan model deteksi kerusakan rumah (RF-DETR, Apache 2.0)"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "rfdetr[train]==1.11.0",
+    "modal==1.5.5",
+    "pillow>=10",
+]
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".", "tests"]

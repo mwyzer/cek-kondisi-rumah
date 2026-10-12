@@ -48,3 +48,6 @@ next-env.d.ts
 /analyzer/.venv/
 __pycache__/
 .pytest_cache/
+/splat/.venv/
+/detector/.venv/
+/analyzer/model/

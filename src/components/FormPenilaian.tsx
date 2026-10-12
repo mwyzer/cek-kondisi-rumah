@@ -3,28 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MAX_FOTO, RUANG } from "@/lib/penilaian";
+import { kanvasDari, keJpeg, TIPE_GAMBAR as TIPE_DITERIMA } from "@/lib/gambar-klien";
 
 type Foto = { id: string; file: File; url: string; label: string };
 
-const TIPE_DITERIMA = ["image/jpeg", "image/png", "image/webp"];
-
 // Perkecil di browser: JPEG sisi terpanjang 1568 px untuk AI, 360 px untuk thumbnail laporan
 async function siapkan(file: File) {
-  const bmp = await createImageBitmap(file, { imageOrientation: "from-image" });
-  const ubah = (maks: number) => {
-    const s = Math.min(1, maks / Math.max(bmp.width, bmp.height));
-    const c = document.createElement("canvas");
-    c.width = Math.round(bmp.width * s);
-    c.height = Math.round(bmp.height * s);
-    c.getContext("2d")!.drawImage(bmp, 0, 0, c.width, c.height);
-    return c;
-  };
-  const besar = await new Promise<Blob>((ok, gagal) =>
-    ubah(1568).toBlob((b) => (b ? ok(b) : gagal(new Error("toBlob"))), "image/jpeg", 0.85),
-  );
-  const thumb = ubah(360).toDataURL("image/jpeg", 0.7);
-  bmp.close();
-  return { besar, thumb };
+  const [besar, kecil] = await kanvasDari(file, 1568, 360);
+  return { besar: await keJpeg(besar, 0.85), thumb: kecil.toDataURL("image/jpeg", 0.7) };
 }
 
 export default function FormPenilaian() {

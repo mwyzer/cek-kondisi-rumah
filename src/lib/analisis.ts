@@ -3,10 +3,15 @@ import "server-only";
 // Klien layanan analisis foto Python (folder analyzer/). Opsional: bila ANALYZER_URL kosong
 // atau layanan tidak menjawab, penilaian tetap berjalan tanpa hasil analisis otomatis.
 
-import { LABEL_KUALITAS, type AnalisisFoto } from "./analisis-tipe";
+import { LABEL_KUALITAS, ringkasDeteksi, type AnalisisFoto } from "./analisis-tipe";
+import { kelasById } from "./kelas-kerusakan";
 
 export type { AnalisisFoto };
-export type HasilAnalisis = { versi: string; foto: (AnalisisFoto & { overlay: string })[] };
+export type KotakSaran = { kelas: string; x: number; y: number; w: number; h: number };
+export type HasilAnalisis = {
+  versi: string;
+  foto: (AnalisisFoto & { overlay: string; kotak?: KotakSaran[] })[];
+};
 
 export async function analisisFoto(foto: Uint8Array[]): Promise<HasilAnalisis | null> {
   const url = process.env.ANALYZER_URL;
@@ -34,6 +39,13 @@ export function petunjukUntukAI(a: AnalisisFoto[]): string {
   return a
     .map((f) => {
       const bagian = [`kualitas: ${LABEL_KUALITAS[f.kualitas.status].toLowerCase()}`];
+      const model = ringkasDeteksi(f.deteksi);
+      if (model.length) {
+        bagian.push(
+          "model deteksi terlatih: " +
+            model.map((d) => `${d.jumlah}× ${kelasById(d.kelas)?.nama.toLowerCase() ?? d.kelas} (skor maks ${d.skorMaks.toFixed(2)})`).join(", "),
+        );
+      }
       if (f.retak.jumlah) bagian.push(`${f.retak.jumlah} garis kandidat retak (total panjang ${(f.retak.panjang_relatif * 100).toFixed(0)}% diagonal foto)`);
       if (f.noda.jumlah) bagian.push(`${f.noda.jumlah} bercak gelap kandidat noda/rembesan (${f.noda.area_persen.toFixed(1)}% area)`);
       return `F${f.indeks}: ${bagian.join("; ")}`;

@@ -71,6 +71,68 @@ npm run test:analyzer
 - Skor → kerusakan: 5→0%, 4→10%, 3→30%, 2→55%, 1→85%. Komponen yang tidak terlihat di foto dikeluarkan dan bobot sisanya dinormalkan ulang.
 - Kategori mengacu batas tingkat kerusakan bangunan PUPR: <10% Baik, ≤30% Rusak Ringan, ≤45% Rusak Sedang, >45% Rusak Berat.
 
+### Model deteksi kerusakan (RF-DETR, opsional)
+
+Model deteksi kerusakan dilatih dari foto rumah yang Anda beri label sendiri. Setelah terpasang, model ini menggantikan heuristik retak/noda pada foto bertanda, hasilnya dikirim ke AI sebagai petunjuk, dan dipakai sebagai saran label untuk foto baru. Model ini memakai [RF-DETR](https://github.com/roboflow/rf-detr) ukuran Nano–Large (Apache 2.0). Ukuran XL/2XL sengaja tidak dipakai karena lisensinya berbeda (PML).
+
+Kelas (urutan tetap, lihat `src/lib/kelas-kerusakan.ts`): retak, rembesan/noda air, jamur/lumut, cat mengelupas, plester terkelupas, karat, kayu lapuk/rayap, keramik rusak, plafon rusak.
+
+1. **Kumpulkan dan beri label foto** di http://localhost:3000/dataset. Saran kotak untuk retak dan rembesan dibuat otomatis bila layanan analisis berjalan. Tombol pintas: `1`–`9` kelas, `Del` hapus kotak, `A` terima saran, `Enter` simpan & lanjut, `Ctrl+Z` undo. Patokan awal: sekitar 100 kotak per kelas dari banyak rumah yang berbeda. Simpan juga foto tanpa kerusakan (tanpa kotak).
+2. **Ekspor** dengan tombol di halaman dataset. Hasilnya ada di `data/dataset/ekspor/{train,valid,test}` dalam format COCO, dibagi 80/10/10 secara stabil.
+3. **Latih** di GPU Modal (butuh akun Modal):
+
+   ```bash
+   cd detector
+   uv sync
+   uv run modal run modal_app.py --ukuran small --epochs 60
+   ```
+
+   Model tersimpan di `analyzer/model/kerusakan.pth` beserta `kerusakan.json`. Untuk uji kecil di CPU (lambat, hanya memastikan alurnya jalan): `uv run python latih.py --ukuran nano --epochs 1 --device cpu --keluar <folder-uji>`.
+4. **Pakai** di layanan analisis:
+
+   ```bash
+   cd analyzer
+   uv sync --extra deteksi
+   ```
+
+   Lalu restart `npm run analyzer`. Status model bisa dicek di http://127.0.0.1:8000/sehat.
+
+Alat dataset tidak punya login, jadi di produksi alat ini nonaktif kecuali `DATASET_AKTIF=1`. Foto dataset disimpan lokal di `data/dataset/` dan tidak ikut ke git.
+
+### Pemindaian 3D (Gaussian Splatting, opsional)
+
+Di halaman laporan, pengguna bisa mengunggah video pendek (10–90 detik) satu ruangan. Video diproses menjadi model 3D Gaussian Splatting yang bisa diputar dan di-zoom langsung di laporan. **Tampilan ini visual saja dan tidak memengaruhi skor, indeks, atau kategori.**
+
+```
+Browser ──unggah video──▶ Vercel Blob
+   │ POST /api/pemindaian
+   ▼
+Modal (GPU L4): ffmpeg → buang frame buram → COLMAP → gsplat (MCMC, maks. 400 rb gaussian) → PLY terkompresi
+   ▲ GET /api/pemindaian/[id] (dicek tiap 10 detik)
+   │ bila selesai: hasil disimpan ke Vercel Blob → viewer Spark (three.js) di laporan
+```
+
+Mengaktifkan:
+
+1. Buat Blob store di Vercel, lalu isi `BLOB_READ_WRITE_TOKEN` di `.env.local`.
+2. Deploy worker ke Modal (butuh akun Modal):
+
+   ```bash
+   cd splat
+   uv sync
+   uv run modal token new
+   uv run modal secret create cek-rumah-splat SPLAT_TOKEN=<token-acak-panjang>
+   uv run modal deploy app.py
+   ```
+
+3. Isi `MODAL_SPLAT_URL` dengan URL endpoint `mulai` dari hasil deploy, dan `SPLAT_TOKEN` dengan token yang sama.
+4. Restart `npm run dev`.
+
+Catatan:
+- Biaya GPU dihitung per pemakaian di Modal. `MAKS_PEMINDAIAN_HARIAN` (default 5) membatasi jumlah job per 24 jam karena aplikasi belum punya login.
+- Video dan model 3D disimpan sebagai blob publik dengan nama acak. Siapa pun yang tahu URL-nya bisa membukanya.
+- Tes langkah tanpa GPU: `cd splat && uv run pytest`.
+
 ## Struktur
 
 | Berkas | Isi |
@@ -81,6 +143,14 @@ npm run test:analyzer
 | `src/lib/analisis.ts` | Klien layanan analisis Python |
 | `analyzer/analisis.py` | Analisis citra (OpenCV) |
 | `analyzer/main.py` | API FastAPI (`POST /analisis`, `GET /sehat`) |
+| `analyzer/deteksi.py` | Prediksi model RF-DETR (opsional) |
+| `detector/latih.py`, `detector/modal_app.py` | Pelatihan RF-DETR (lokal CPU / GPU Modal) |
+| `src/lib/kelas-kerusakan.ts`, `src/lib/dataset.ts` | Kelas kerusakan, penyimpanan & ekspor dataset COCO |
+| `src/app/dataset/`, `src/components/AlatLabel.tsx` | Halaman dataset dan alat label |
+| `splat/app.py` | Worker Modal pemindaian 3D (image GPU, endpoint `mulai` dan `status`) |
+| `splat/pipeline.py` | Langkah pemindaian: pemilihan frame, validasi, perintah COLMAP/gsplat |
+| `src/lib/splat.ts` | Klien worker Modal |
+| `src/components/Pemindaian3D.tsx`, `ViewerSplat.tsx` | Unggah video, status, viewer 3D |
 | `src/app/api/penilaian/route.ts` | Endpoint penilaian |
 | `src/components/FormPenilaian.tsx` | Unggah foto & data bangunan |
 | `src/components/Laporan.tsx` | Tampilan laporan |
