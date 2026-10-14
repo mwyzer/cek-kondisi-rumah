@@ -242,6 +242,7 @@ def _assess_photos(photos: list[Any], labels: list[str], info: dict[str, str], c
             }
         ],
         tool_choice={"type": "tool", "name": "create_home_condition_report"},
+        thinking={"type": "disabled"},
         messages=[{"role": "user", "content": content}],
     )
     report_block = next((block for block in response.content if block.type == "tool_use"), None)
