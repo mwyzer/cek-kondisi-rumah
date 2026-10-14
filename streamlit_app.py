@@ -416,9 +416,8 @@ def main() -> None:
         "Computer-vision findings are heuristic indicators and may be inaccurate."
     )
 
-    api_key = _setting("ANTHROPIC_API_KEY")
-    model = _setting("ANTHROPIC_MODEL", "claude-sonnet-4-5-20250929")
-    base_url = _setting("ANTHROPIC_BASE_URL")
+    api_key = _setting("DEEPSEEK_API_KEY")
+    model = _setting("DEEPSEEK_MODEL", "deepseek-flash")
 
     st.subheader("1. Home photos")
     uploads = st.file_uploader(
@@ -465,7 +464,7 @@ def main() -> None:
         st.error("Photos exceeding 5 MB: " + ", ".join(str(index) for index in too_large))
     disabled = not uploads or bool(too_large) or not api_key.strip()
     if not api_key.strip():
-        st.warning("Assessment is unavailable. Configure ANTHROPIC_API_KEY in the app environment or Streamlit Secrets.")
+        st.warning("Assessment is unavailable. Configure DEEPSEEK_API_KEY in the app environment or Streamlit Secrets.")
     signature = _input_signature(uploads, labels, info, model.strip()) if uploads else ""
     if st.session_state.get("assessment_signature") != signature:
         st.session_state.pop("assessment_result", None)
@@ -474,7 +473,10 @@ def main() -> None:
     if st.button("Assess home condition", type="primary", disabled=disabled):
         try:
             with st.spinner("Analyzing photos and generating the report..."):
-                client = Anthropic(api_key=api_key.strip(), base_url=base_url or None)
+                client = Anthropic(
+                    api_key=api_key.strip(),
+                    base_url="https://api.deepseek.com/anthropic",
+                )
                 result = _assess_photos(uploads, labels, info, client, model.strip())
                 st.session_state["assessment_result"] = result
                 st.session_state["assessment_signature"] = signature

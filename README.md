@@ -10,7 +10,7 @@ The application interface, new AI-generated report text, service messages, and p
 
 The repository also includes a simplified Streamlit app for photo-based assessments. It reuses the Python/OpenCV analyzer and provides an AI-generated report, condition index, repair-cost estimates, and a JSON download. Reports are held in the current Streamlit session; the demo does not include persistent history, dataset-labeling tools, or 3D scanning.
 
-The demo accepts up to 10 JPG, PNG, or WebP photos, with a 5 MB limit per photo. It uses Anthropic directly; unlike the full web app, it does not use Vercel AI Gateway. Configure `ANTHROPIC_API_KEY` in the environment or Streamlit Secrets; the app has no in-page AI configuration or API-key input. Optional `ANTHROPIC_MODEL` and `ANTHROPIC_BASE_URL` settings can also be provided as environment variables or Streamlit Secrets.
+The demo accepts up to 10 JPG, PNG, or WebP photos, with a 5 MB limit per photo. It uses DeepSeek's official Anthropic-compatible API endpoint for image input and structured reports; this does not require an Anthropic account or key. Configure `DEEPSEEK_API_KEY` in the environment or Streamlit Secrets; the app has no in-page AI configuration or API-key input. The model defaults to `deepseek-flash` and can be overridden with `DEEPSEEK_MODEL`.
 
 Run locally with Python 3.11 or newer:
 
@@ -18,11 +18,11 @@ Run locally with Python 3.11 or newer:
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-$env:ANTHROPIC_API_KEY = "your-api-key"
+$env:DEEPSEEK_API_KEY = "your-deepseek-api-key"
 streamlit run streamlit_app.py
 ```
 
-For Streamlit Community Cloud, set `ANTHROPIC_API_KEY` in the app's Secrets settings. Optional secrets are `ANTHROPIC_MODEL` and `ANTHROPIC_BASE_URL`. The Streamlit entry point is `streamlit_app.py`. Treat uploaded photos and building details as sensitive: they are sent to the configured Anthropic endpoint for assessment. Configure provider access and review its data-handling terms before deployment.
+For Streamlit Community Cloud, set `DEEPSEEK_API_KEY` in the app's Secrets settings. Optionally set `DEEPSEEK_MODEL`. The Streamlit entry point is `streamlit_app.py`. Treat uploaded photos and building details as sensitive: they are sent to DeepSeek for assessment. Configure provider access and review its data-handling terms before deployment.
 
 ## Screenshots
 
