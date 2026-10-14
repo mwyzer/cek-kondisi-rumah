@@ -420,22 +420,31 @@ def main() -> None:
     api_key = _setting("DEEPSEEK_API_KEY")
     model = _setting("DEEPSEEK_MODEL", "deepseek-flash")
 
-    st.subheader("1. Home photos")
-    uploads = st.file_uploader(
-        "Choose photos (JPG, PNG, or WebP; up to 10 photos, 5 MB each)",
-        type=["jpg", "jpeg", "png", "webp"],
-        accept_multiple_files=True,
-    )
+    with st.expander("1. Home photos", expanded=True):
+        uploads = st.file_uploader(
+            "Choose photos (JPG, PNG, or WebP; up to 10 photos, 5 MB each)",
+            type=["jpg", "jpeg", "png", "webp"],
+            accept_multiple_files=True,
+        )
+        preview_width = st.slider(
+            "Photo preview size",
+            min_value=100,
+            max_value=300,
+            value=140,
+            step=40,
+            format="%d px",
+        )
     if len(uploads) > MAX_PHOTOS:
         st.error(f"Please upload no more than {MAX_PHOTOS} photos.")
         uploads = uploads[:MAX_PHOTOS]
 
     labels = []
     if uploads:
-        preview_columns = st.columns(min(3, len(uploads)))
+        column_count = max(1, min(5, 720 // preview_width))
+        preview_columns = st.columns(min(column_count, len(uploads)))
         for index, photo in enumerate(uploads):
             with preview_columns[index % len(preview_columns)]:
-                st.image(photo, caption=f"Photo {index + 1}", use_container_width=True)
+                st.image(photo, caption=f"Photo {index + 1}", width=preview_width)
                 labels.append(
                     st.selectbox(
                         f"Area shown in photo {index + 1}",
