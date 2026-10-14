@@ -8,7 +8,7 @@ import FotoAnalisis from "./FotoAnalisis";
 
 function Meter({ skor, tingkat }: { skor: number | null; tingkat: Tingkat }) {
   return (
-    <span className={`meter t-${tingkat}`} aria-label={`Skor ${skor ?? "tidak ada"} dari 5`}>
+    <span className={`meter t-${tingkat}`} aria-label={`Score ${skor ?? "none"} out of 5`}>
       {[1, 2, 3, 4, 5].map((i) => <i key={i} className={skor != null && i <= skor ? "on" : ""} />)}
     </span>
   );
@@ -23,23 +23,23 @@ function Dial({ nilai, tingkat }: { nilai: number | null; tingkat: Tingkat }) {
         <circle className="arc" cx="74" cy="74" r={r} fill="none" stroke="currentColor" strokeWidth="10"
           strokeDasharray={c.toFixed(1)} strokeDashoffset={off.toFixed(1)} transform="rotate(-90 74 74)" />
       </svg>
-      <div className="val"><b>{nilai ?? "–"}</b><span>DARI 100</span></div>
+      <div className="val"><b>{nilai ?? "–"}</b><span>OUT OF 100</span></div>
     </div>
   );
 }
 
 function teksRingkasan(lap: LaporanData, h: ReturnType<typeof hitung>) {
   return [
-    "PENILAIAN KONDISI RUMAH",
-    `Indeks kondisi: ${h.indeks ?? "-"}/100 — ${h.kategori.label}`,
-    `Tingkat kerusakan: ${h.rusak == null ? "-" : persen(h.rusak)}`,
-    `Estimasi biaya: ${rpRange(h.biayaMin, h.biayaMax)}`,
+    "HOME CONDITION ASSESSMENT",
+    `Condition index: ${h.indeks ?? "-"}/100 — ${h.kategori.label}`,
+    `Damage level: ${h.rusak == null ? "-" : persen(h.rusak)}`,
+    `Estimated cost: ${rpRange(h.biayaMin, h.biayaMax)}`,
     "",
     lap.ringkasan,
     "",
     ...KOMPONEN.map((k) => {
       const c = lap.komponen[k.id];
-      return `- ${k.nama}: ${c.skor ?? "tidak terlihat"}/5 (${statusSkor(c.skor).label})${c.rekomendasi ? " — " + c.rekomendasi : ""}`;
+      return `- ${k.nama}: ${c.skor ?? "not visible"}/5 (${statusSkor(c.skor).label})${c.rekomendasi ? " — " + c.rekomendasi : ""}`;
     }),
   ].join("\n");
 }
@@ -52,10 +52,10 @@ function ringkasAnalisis(p: Penilaian) {
   const kurang = a.filter((x) => !x.kualitas.layak).length;
   const deteksi = a.reduce((n, x) => n + (x.deteksi?.length ?? 0), 0);
   const bagian = [
-    deteksi > 0 && `${deteksi} kerusakan terdeteksi model`,
-    retak ? `${retak} foto dengan indikasi retak` : "tidak ada indikasi retak",
-    noda ? `${noda} foto dengan indikasi noda` : "tidak ada indikasi noda",
-    kurang && `${kurang} foto kurang layak (buram/gelap)`,
+    deteksi > 0 && `${deteksi} model-detected issue(s)`,
+    retak ? `${retak} photo(s) with crack indications` : "no crack indications",
+    noda ? `${noda} photo(s) with stain indications` : "no stain indications",
+    kurang && `${kurang} photo(s) may be unsuitable (blurry/dark)`,
   ].filter(Boolean);
   return { ada: true, ringkasan: bagian.join(" · "), model: deteksi > 0 };
 }
@@ -77,33 +77,33 @@ export default function Laporan({ p }: { p: Penilaian }) {
         <Dial nilai={h.indeks} tingkat={h.kategori.tingkat} />
         <div style={{ minWidth: 0 }}>
           <div className="row">
-            <span className="eyebrow">Hasil penilaian</span>
+            <span className="eyebrow">Assessment result</span>
             <span className={`chip t-${h.kategori.tingkat}`}>{h.kategori.label}</span>
           </div>
           <p className="summary">{lap.ringkasan}</p>
           {!h.cukup && (
             <p className="summary risk" style={{ padding: "10px 12px", marginTop: 12 }}>
-              Baru {h.cakupan}% bobot komponen yang terlihat; indeks butuh minimal {CAKUPAN_MIN}%. Tambahkan foto
-              {" "}atap, lantai, plafon, struktur, atau utilitas, lalu nilai ulang.
+              Only {h.cakupan}% of component weight is visible; the index requires at least {CAKUPAN_MIN}% coverage.
+              Add photos of the roof, floors, ceilings, structure, or utilities, then reassess.
             </p>
           )}
           <div className="kpis">
-            <div className="kpi"><span className="eyebrow">Tingkat kerusakan</span><b>{h.rusak == null ? "—" : persen(h.rusak)}</b></div>
-            <div className="kpi"><span className="eyebrow">Estimasi biaya</span><b>{rpRange(h.biayaMin, h.biayaMax)}</b></div>
-            <div className="kpi"><span className="eyebrow">Cakupan penilaian</span><b>{h.cakupan}% bobot</b></div>
+            <div className="kpi"><span className="eyebrow">Damage level</span><b>{h.rusak == null ? "—" : persen(h.rusak)}</b></div>
+            <div className="kpi"><span className="eyebrow">Estimated cost</span><b>{rpRange(h.biayaMin, h.biayaMax)}</b></div>
+            <div className="kpi"><span className="eyebrow">Assessment coverage</span><b>{h.cakupan}% of weight</b></div>
           </div>
         </div>
       </div>
 
       <div className="section">
         <div className="meta-line">
-          <span>Dinilai {new Date(p.dibuat).toLocaleString("id-ID", { dateStyle: "long", timeStyle: "short", timeZone: "Asia/Jakarta" })} WIB</span>
+          <span>Assessed {new Date(p.dibuat).toLocaleString("en-US", { dateStyle: "long", timeStyle: "short", timeZone: "Asia/Jakarta" })} Western Indonesia Time</span>
           {info && <span>{info}</span>}
           <span className="mono">{p.model}</span>
         </div>
         {cv.ada && (
           <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
-            <h2>Analisis foto otomatis</h2>
+            <h2>Automated photo analysis</h2>
             <span className="foot">{cv.ringkasan}</span>
           </div>
         )}
@@ -112,17 +112,17 @@ export default function Laporan({ p }: { p: Penilaian }) {
         </div>
         {cv.model && (
           <p className="foot">
-            Kotak berlabel pada foto bertanda berasal dari model deteksi kerusakan (RF-DETR) yang dilatih dari dataset
-            berlabel; angka di kotak adalah skor keyakinan model. Deteksi bisa keliru, dan penilaian akhir tetap dibuat AI
-            dengan melihat fotonya langsung.
+            Labeled boxes on marked photos come from the RF-DETR damage-detection model trained on an annotated dataset;
+            numbers in the boxes are model confidence scores. Detections can be wrong. The final assessment is made by AI
+            from the photos themselves.
           </p>
         )}
         {cv.ada && !cv.model && (
           <p className="foot">
-            Penanda <span className="t-severe">merah</span> = garis kandidat retak, garis tepi{" "}
-            <span className="t-mid">oranye</span> = bercak kandidat noda/rembesan. Dideteksi dengan pengolahan citra
-            (OpenCV), bukan diagnosis: bayangan, nat, atau tepi benda bisa ikut tertandai. Penilaian akhir di atas
-            dibuat AI dengan melihat fotonya langsung.
+            <span className="t-severe">Red</span> markers = possible crack lines;{" "}
+            <span className="t-mid">orange</span> outlines = possible stains or leaks. These are image-processing
+            indicators (OpenCV), not diagnoses: shadows, grout, or object edges may also be marked. The final assessment
+            above is made by AI from the photos themselves.
           </p>
         )}
       </div>
@@ -130,7 +130,7 @@ export default function Laporan({ p }: { p: Penilaian }) {
       {lap.risiko_keselamatan.length > 0 && (
         <div className="section">
           <div className="risk">
-            <strong>Perhatian keselamatan</strong>
+            <strong>Safety considerations</strong>
             <ul className="list">{lap.risiko_keselamatan.map((r, i) => <li key={i}>{r}</li>)}</ul>
           </div>
         </div>
@@ -138,13 +138,13 @@ export default function Laporan({ p }: { p: Penilaian }) {
 
       <div className="section">
         <div className="row" style={{ justifyContent: "space-between" }}>
-          <h2>Prioritas perbaikan</h2>
+          <h2>Repair priorities</h2>
           <SalinRingkasan teks={teksRingkasan(lap, h)} />
         </div>
         {aksi.length ? (
           <div className="tablewrap">
             <table>
-              <thead><tr><th>Urgensi</th><th>Komponen</th><th>Tindakan</th><th>Biaya</th></tr></thead>
+              <thead><tr><th>Urgency</th><th>Component</th><th>Action</th><th>Cost</th></tr></thead>
               <tbody>
                 {aksi.map(({ k, c }) => (
                   <tr key={k.id}>
@@ -158,12 +158,12 @@ export default function Laporan({ p }: { p: Penilaian }) {
             </table>
           </div>
         ) : (
-          <p className="muted">Tidak ada perbaikan yang perlu diprioritaskan dari foto ini.</p>
+          <p className="muted">No repairs need to be prioritized based on these photos.</p>
         )}
       </div>
 
       <div className="section">
-        <h2>Rincian per komponen</h2>
+        <h2>Component details</h2>
         <div>
           {KOMPONEN.map((k) => {
             const c = lap.komponen[k.id];
@@ -177,11 +177,11 @@ export default function Laporan({ p }: { p: Penilaian }) {
                     <span className="row"><Meter skor={c.skor} tingkat={st.tingkat} /><span className={`chip t-${st.tingkat}`}>{st.label}</span></span>
                   </div>
                   {c.temuan.length > 0 && <ul>{c.temuan.map((t, i) => <li key={i}>{t}</li>)}</ul>}
-                  {c.rekomendasi && <div className="rec"><strong>Rekomendasi:</strong> {c.rekomendasi}</div>}
+                  {c.rekomendasi && <div className="rec"><strong>Recommendation:</strong> {c.rekomendasi}</div>}
                   <div className="meta">
-                    <span>Urgensi: <b>{URGENSI[c.urgensi].label}</b></span>
+                    <span>Urgency: <b>{URGENSI[c.urgensi].label}</b></span>
                     <span className="mono">{rpRange(c.biaya_min, c.biaya_max)}</span>
-                    {c.foto.length > 0 && <span>Foto: {c.foto.map((n) => "F" + n).join(", ")}</span>}
+                    {c.foto.length > 0 && <span>Photos: {c.foto.map((n) => "F" + n).join(", ")}</span>}
                   </div>
                 </div>
               </div>
@@ -193,36 +193,36 @@ export default function Laporan({ p }: { p: Penilaian }) {
       <div className="section">
         <div className="cols">
           <div>
-            <h3>Skala skor</h3>
+            <h3>Score scale</h3>
             <div className="scale">
-              <div><span className="mono">5</span> Sangat baik, tanpa cacat</div>
-              <div><span className="mono">4</span> Baik, cacat kosmetik</div>
-              <div><span className="mono">3</span> Rusak ringan</div>
-              <div><span className="mono">2</span> Rusak sedang</div>
-              <div><span className="mono">1</span> Rusak berat / berbahaya</div>
+              <div><span className="mono">5</span> Excellent, no defects</div>
+              <div><span className="mono">4</span> Good, cosmetic defects</div>
+              <div><span className="mono">3</span> Minor damage</div>
+              <div><span className="mono">2</span> Moderate damage</div>
+              <div><span className="mono">1</span> Severe / hazardous damage</div>
             </div>
             <p className="foot" style={{ marginTop: 8 }}>
-              Kategori bangunan: &lt;10% Baik · ≤30% Rusak Ringan · ≤45% Rusak Sedang · &gt;45% Rusak Berat (mengacu batas tingkat kerusakan bangunan gedung PUPR).
+              Building category: &lt;10% Good · ≤30% Minor damage · ≤45% Moderate damage · &gt;45% Severe damage (based on PUPR building-damage thresholds).
             </p>
           </div>
           <div>
-            <h3>Kualitas foto</h3>
+            <h3>Photo quality</h3>
             <p style={{ marginTop: 8 }}>{lap.kualitas_foto || "—"}</p>
             {tidakTerlihat.length > 0 && (
-              <p className="foot" style={{ marginTop: 8 }}>Tidak terlihat, dikeluarkan dari indeks: {tidakTerlihat.join(", ")}.</p>
+              <p className="foot" style={{ marginTop: 8 }}>Not visible and excluded from the index: {tidakTerlihat.join(", ")}.</p>
             )}
           </div>
           <div>
-            <h3>Foto tambahan yang disarankan</h3>
+            <h3>Additional photos recommended</h3>
             {lap.foto_disarankan.length ? (
               <ul className="list" style={{ marginTop: 8 }}>{lap.foto_disarankan.map((f, i) => <li key={i}>{f}</li>)}</ul>
             ) : (
-              <p className="muted" style={{ marginTop: 8 }}>Tidak ada.</p>
+              <p className="muted" style={{ marginTop: 8 }}>None.</p>
             )}
           </div>
         </div>
         <p className="foot">
-          Kerusakan tersembunyi (rayap, pipa dalam dinding, pondasi) tidak dapat dideteksi dari foto. Biaya adalah perkiraan kasar AI.
+          Hidden damage (termites, pipes inside walls, or foundations) cannot be detected from photos. Costs are rough AI-generated estimates.
         </p>
       </div>
     </article>

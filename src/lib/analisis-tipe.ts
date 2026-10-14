@@ -1,4 +1,4 @@
-// Tipe & label hasil analisis foto Python; dipakai server dan komponen tampilan.
+// Types and labels for Python photo-analysis results, used by server and UI components.
 
 export type StatusKualitas = "baik" | "agak_buram" | "buram" | "gelap" | "terlalu_terang" | "resolusi_rendah";
 
@@ -9,13 +9,13 @@ export type AnalisisFoto = {
   kualitas: { ketajaman: number; kecerahan: number; status: StatusKualitas; layak: boolean; catatan: string[] };
   retak: { jumlah: number; area_persen: number; panjang_relatif: number };
   noda: { jumlah: number; area_persen: number };
-  // Deteksi model RF-DETR terlatih (kosong/tidak ada bila model belum dipasang)
+  // Trained RF-DETR detections (empty or absent if the model is not installed).
   deteksi?: DeteksiModel[];
 };
 
 export type DeteksiModel = { kelas: string; skor: number; x: number; y: number; w: number; h: number };
 
-// Ringkas deteksi per kelas: jumlah dan skor tertinggi
+// Summarize detections per class: count and highest confidence score.
 export function ringkasDeteksi(d: DeteksiModel[] = []) {
   const m = new Map<string, { jumlah: number; skorMaks: number }>();
   for (const x of d) {
@@ -26,10 +26,10 @@ export function ringkasDeteksi(d: DeteksiModel[] = []) {
 }
 
 export const LABEL_KUALITAS: Record<StatusKualitas, string> = {
-  baik: "Foto jelas",
-  agak_buram: "Agak buram",
-  buram: "Buram",
-  gelap: "Terlalu gelap",
-  terlalu_terang: "Terlalu terang",
-  resolusi_rendah: "Resolusi rendah",
+  baik: "Clear photo",
+  agak_buram: "Slightly blurry",
+  buram: "Blurry",
+  gelap: "Too dark",
+  terlalu_terang: "Overexposed",
+  resolusi_rendah: "Low resolution",
 };

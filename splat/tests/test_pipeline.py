@@ -1,4 +1,4 @@
-"""Uji langkah pemindaian yang tidak butuh GPU (pemilihan frame, validasi, perintah)."""
+"""Test GPU-free scanning steps (frame selection, validation, and commands)."""
 
 from pathlib import Path
 
@@ -34,12 +34,12 @@ def test_frame_buram_dibuang(tmp_path):
 
 
 def test_terlalu_sedikit_frame_tajam(tmp_path):
-    with pytest.raises(p.GagalProses, match="cukup tajam"):
+    with pytest.raises(p.GagalProses, match="sharp enough"):
         p.pilih_frame(buat(tmp_path, tajam=10, buram=40))
 
 
 def test_frame_dibatasi_merata(tmp_path, monkeypatch):
-    monkeypatch.setattr(p, "ketajaman", lambda _f: 10.0)  # semua tajam, tanpa membaca gambar
+    monkeypatch.setattr(p, "ketajaman", lambda _f: 10.0)  # All frames are sharp without reading image data.
     frames = [tmp_path / f"{i:05d}.jpg" for i in range(400)]
     terpilih = p.pilih_frame(frames)
     assert len(terpilih) == p.FRAME_MAKS
@@ -88,7 +88,7 @@ def test_colmap_sequential_tanpa_gpu(tmp_path):
 
 
 def test_colmap_gagal_tanpa_model(tmp_path):
-    with pytest.raises(p.GagalProses, match="Pose kamera"):
+    with pytest.raises(p.GagalProses, match="Camera poses"):
         p.cek_hasil_colmap(tmp_path)
     (tmp_path / "sparse" / "0").mkdir(parents=True)
     (tmp_path / "sparse" / "0" / "images.bin").write_bytes(b"x")

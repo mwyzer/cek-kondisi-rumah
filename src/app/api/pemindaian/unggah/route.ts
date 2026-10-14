@@ -3,9 +3,9 @@ import { NextResponse } from "next/server";
 import { adaPenilaian } from "@/lib/db";
 import { fitur3dAktif } from "@/lib/splat";
 
-// Membuat token sementara agar browser bisa mengunggah video langsung ke Vercel Blob
+// Generate a temporary token so the browser can upload a video directly to Vercel Blob.
 export async function POST(req: Request) {
-  if (!fitur3dAktif()) return NextResponse.json({ error: "Pemindaian 3D belum diaktifkan." }, { status: 503 });
+  if (!fitur3dAktif()) return NextResponse.json({ error: "3D scanning is not enabled." }, { status: 503 });
 
   const body = (await req.json()) as HandleUploadBody;
   try {
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
           }
         })();
         if (!pathname.startsWith("pemindaian/") || !(await adaPenilaian(penilaianId))) {
-          throw new Error("Laporan tidak ditemukan.");
+          throw new Error("Assessment report not found.");
         }
         return {
           allowedContentTypes: ["video/mp4", "video/quicktime"],
@@ -32,6 +32,6 @@ export async function POST(req: Request) {
     });
     return NextResponse.json(hasil);
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Unggahan ditolak." }, { status: 400 });
+    return NextResponse.json({ error: e instanceof Error ? e.message : "Upload rejected." }, { status: 400 });
   }
 }

@@ -7,7 +7,7 @@ import { kanvasDari, keJpeg, TIPE_GAMBAR as TIPE_DITERIMA } from "@/lib/gambar-k
 
 type Foto = { id: string; file: File; url: string; label: string };
 
-// Perkecil di browser: JPEG sisi terpanjang 1568 px untuk AI, 360 px untuk thumbnail laporan
+// Resize in the browser: JPEG with a 1568 px longest edge for AI and 360 px for report thumbnails.
 async function siapkan(file: File) {
   const [besar, kecil] = await kanvasDari(file, 1568, 360);
   return { besar: await keJpeg(besar, 0.85), thumb: kecil.toDataURL("image/jpeg", 0.7) };
@@ -19,7 +19,7 @@ export default function FormPenilaian() {
   const [foto, setFoto] = useState<Foto[]>([]);
   const [over, setOver] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [status, setStatus] = useState<{ teks: string; err?: boolean }>({ teks: "Tambahkan minimal 1 foto." });
+  const [status, setStatus] = useState<{ teks: string; err?: boolean }>({ teks: "Add at least one photo." });
 
   // Lepas object URL pratinjau saat halaman ditinggalkan
   const fotoRef = useRef(foto);
@@ -42,8 +42,8 @@ export default function FormPenilaian() {
     setFoto((f) => [...f, ...baru]);
     setStatus(
       dilewati
-        ? { teks: `${dilewati} file dilewati (hanya JPG/PNG/WebP, maks. ${MAX_FOTO} foto).`, err: true }
-        : { teks: `${total} dari maks. ${MAX_FOTO} foto siap dinilai.` },
+        ? { teks: `${dilewati} file(s) skipped (JPG/PNG/WebP only; maximum ${MAX_FOTO} photos).`, err: true }
+        : { teks: `${total} of ${MAX_FOTO} maximum photos ready for assessment.` },
     );
   }
 
@@ -61,21 +61,21 @@ export default function FormPenilaian() {
     setBusy(true);
     const form = new FormData(e.currentTarget);
     try {
-      setStatus({ teks: "Menyiapkan foto…" });
+      setStatus({ teks: "Preparing photos…" });
       const siap = await Promise.all(foto.map((f) => siapkan(f.file)));
       foto.forEach((f, i) => {
         form.append("foto", siap[i].besar, `F${i + 1}.jpg`);
         form.append("label", f.label);
         form.append("thumb", siap[i].thumb);
       });
-      setStatus({ teks: "AI sedang memeriksa foto… biasanya 20–60 detik." });
+      setStatus({ teks: "AI is assessing the photos… this usually takes 20–60 seconds." });
       const res = await fetch("/api/penilaian", { method: "POST", body: form });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.id) throw new Error(data.error ?? "Penilaian gagal. Coba lagi.");
-      setStatus({ teks: "Selesai. Membuka laporan…" });
+      if (!res.ok || !data.id) throw new Error(data.error ?? "Assessment failed. Please try again.");
+      setStatus({ teks: "Complete. Opening the report…" });
       router.push(`/penilaian/${data.id}`);
     } catch (err) {
-      setStatus({ teks: err instanceof Error && err.message !== "toBlob" ? err.message : "Foto tidak dapat diproses.", err: true });
+      setStatus({ teks: err instanceof Error && err.message !== "toBlob" ? err.message : "The photos could not be processed.", err: true });
       setBusy(false);
     }
   }
@@ -83,9 +83,9 @@ export default function FormPenilaian() {
   return (
     <form className="panel" onSubmit={kirim} aria-busy={busy}>
       <div>
-        <h2>1. Foto rumah</h2>
+        <h2>1. Home photos</h2>
         <p className="muted" style={{ marginTop: 4, fontSize: "0.88rem" }}>
-          Fasad, atap, dinding, lantai, plafon, kamar mandi, dan titik yang dicurigai rusak (retak, rembes, lapuk).
+          Exterior, roof, walls, floors, ceilings, bathrooms, and any areas with suspected damage (cracks, leaks, or rot).
         </p>
       </div>
 
@@ -98,8 +98,8 @@ export default function FormPenilaian() {
         onDrop={(e) => { e.preventDefault(); setOver(false); tambah(e.dataTransfer.files); }}
         disabled={busy}
       >
-        <strong>Pilih atau seret foto ke sini</strong>
-        <span className="muted" style={{ fontSize: "0.82rem" }}>JPG, PNG, atau WebP · maks. {MAX_FOTO} foto</span>
+        <strong>Choose or drag photos here</strong>
+        <span className="muted" style={{ fontSize: "0.82rem" }}>JPG, PNG, or WebP · up to {MAX_FOTO} photos</span>
       </button>
       <input
         ref={input}
@@ -116,13 +116,13 @@ export default function FormPenilaian() {
             <div className="photo" key={p.id}>
               <div className="img">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.url} alt={`Foto ${i + 1}: ${p.label}`} />
+                <img src={p.url} alt={`Photo ${i + 1}: ${p.label}`} />
                 <span className="num">F{i + 1}</span>
-                <button type="button" className="rm" onClick={() => hapus(p.id)} aria-label={`Hapus foto ${i + 1}`} disabled={busy}>×</button>
+                <button type="button" className="rm" onClick={() => hapus(p.id)} aria-label={`Remove photo ${i + 1}`} disabled={busy}>×</button>
               </div>
               <select
                 id={`label-${p.id}`}
-                aria-label={`Bagian rumah pada foto ${i + 1}`}
+                aria-label={`Area of the home shown in photo ${i + 1}`}
                 value={p.label}
                 disabled={busy}
                 onChange={(e) => setFoto((f) => f.map((x) => (x.id === p.id ? { ...x, label: e.target.value } : x)))}
@@ -135,21 +135,21 @@ export default function FormPenilaian() {
       )}
 
       <h2>
-        2. Data bangunan <span className="muted" style={{ font: "400 0.8rem var(--f-body)" }}>(opsional)</span>
+        2. Building details <span className="muted" style={{ font: "400 0.8rem var(--f-body)" }}>(optional)</span>
       </h2>
       <div className="fields">
-        <label className="f">Tipe / luas bangunan<input type="text" id="tipe" name="tipe" placeholder="mis. Tipe 45" maxLength={80} /></label>
-        <label className="f">Umur bangunan (tahun)<input type="number" id="umur" name="umur" min={0} max={150} placeholder="mis. 12" /></label>
-        <label className="f">Jumlah lantai
+        <label className="f">Building type / floor area<input type="text" id="tipe" name="tipe" placeholder="e.g. 45 m²" maxLength={80} /></label>
+        <label className="f">Building age (years)<input type="number" id="umur" name="umur" min={0} max={150} placeholder="e.g. 12" /></label>
+        <label className="f">Number of floors
           <select id="lantai" name="lantai" defaultValue="">
             <option value="">—</option><option>1</option><option>2</option><option>3+</option>
           </select>
         </label>
-        <label className="f">Lokasi (kota)<input type="text" id="kota" name="kota" placeholder="mis. Bekasi" maxLength={80} /></label>
+        <label className="f">City<input type="text" id="kota" name="kota" placeholder="e.g. Jakarta" maxLength={80} /></label>
       </div>
 
       <button type="submit" className="btn" disabled={!foto.length || busy}>
-        {busy ? "Menilai…" : "Nilai kondisi rumah"}
+        {busy ? "Assessing…" : "Assess home condition"}
       </button>
       {busy && <div className="progress" aria-hidden="true"><i /></div>}
       <div className={`status${status.err ? " err" : ""}`} role="status" aria-live="polite">{status.teks}</div>

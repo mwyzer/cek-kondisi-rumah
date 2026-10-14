@@ -8,22 +8,22 @@ const body = IBM_Plex_Sans({ variable: "--f-body", subsets: ["latin"], weight: [
 const mono = IBM_Plex_Mono({ variable: "--f-mono", subsets: ["latin"], weight: ["400", "500"] });
 
 export const metadata: Metadata = {
-  title: { default: "Cek Kondisi Rumah", template: "%s · Cek Kondisi Rumah" },
-  description: "Penilaian kondisi rumah otomatis dari foto, berbasis AI.",
+  title: { default: "Home Condition Assessment", template: "%s · Home Condition Assessment" },
+  description: "AI-assisted home condition assessment from photos.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="id" className={`${display.variable} ${body.variable} ${mono.variable}`}>
+    <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
       <body>
         <div className="wrap">
           <nav className="nav">
-            <Link href="/" className="brand">Cek Kondisi Rumah</Link>
-            <span className="tape">Inspeksi visual · AI</span>
+            <Link href="/" className="brand">Home Condition Assessment</Link>
+            <span className="tape">Visual inspection · AI</span>
           </nav>
           {children}
           <footer className="foot site-foot">
-            Penilaian visual AI dari foto, bukan pengganti inspeksi langsung oleh ahli bangunan bersertifikat.
+            AI-assisted visual assessment from photos. This is not a substitute for an in-person inspection by a qualified building professional.
           </footer>
         </div>
       </body>

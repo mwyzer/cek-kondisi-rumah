@@ -1,8 +1,8 @@
-// Pengolahan gambar di browser (dipakai formulir penilaian dan alat dataset)
+// Browser image processing (used by the assessment form and dataset tool).
 
 export const TIPE_GAMBAR = ["image/jpeg", "image/png", "image/webp"];
 
-// Gambar file ke kanvas dengan sisi terpanjang ≤ maks (orientasi EXIF diterapkan)
+// Draw a file to canvas with its longest edge <= max (EXIF orientation is applied).
 export async function kanvasDari(file: File, ...maks: number[]) {
   const bmp = await createImageBitmap(file, { imageOrientation: "from-image" });
   const hasil = maks.map((m) => {

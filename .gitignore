@@ -45,6 +45,7 @@ next-env.d.ts
 !.env.example
 
 # layanan Python
+/.venv/
 /analyzer/.venv/
 __pycache__/
 .pytest_cache/

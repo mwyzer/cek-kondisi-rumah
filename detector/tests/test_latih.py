@@ -14,19 +14,19 @@ def test_dataset_lengkap_lolos(tmp_path):
 
 
 def test_valid_kosong_ditolak(tmp_path):
-    with pytest.raises(latih.DatasetTidakValid, match="valid kosong"):
+    with pytest.raises(latih.DatasetTidakValid, match="validation split is empty"):
         latih.cek_dataset(buat(tmp_path, {"train": 6, "valid": 0, "test": 1}))
 
 
 def test_train_terlalu_sedikit(tmp_path):
-    with pytest.raises(latih.DatasetTidakValid, match="minimal"):
+    with pytest.raises(latih.DatasetTidakValid, match="minimum"):
         latih.cek_dataset(buat(tmp_path, {"train": 2, "valid": 1, "test": 1}))
 
 
 def test_gambar_hilang(tmp_path):
     d = buat(tmp_path)
     (d / "train" / "train_000.jpg").unlink()
-    with pytest.raises(latih.DatasetTidakValid, match="tidak ditemukan"):
+    with pytest.raises(latih.DatasetTidakValid, match="are missing"):
         latih.cek_dataset(d)
 
 
@@ -36,7 +36,7 @@ def test_tanpa_kotak(tmp_path):
     j = json.loads(ann.read_text())
     j["annotations"] = []
     ann.write_text(json.dumps(j))
-    with pytest.raises(latih.DatasetTidakValid, match="tidak punya satu kotak"):
+    with pytest.raises(latih.DatasetTidakValid, match="does not contain any bounding boxes"):
         latih.cek_dataset(d)
 
 

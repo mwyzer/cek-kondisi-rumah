@@ -1,7 +1,7 @@
 import "server-only";
 
-// Klien layanan analisis foto Python (folder analyzer/). Opsional: bila ANALYZER_URL kosong
-// atau layanan tidak menjawab, penilaian tetap berjalan tanpa hasil analisis otomatis.
+// Python photo-analysis service client (analyzer/). Optional: if ANALYZER_URL is empty
+// or the service is unavailable, assessment continues without automated image analysis.
 
 import { LABEL_KUALITAS, ringkasDeteksi, type AnalisisFoto } from "./analisis-tipe";
 import { kelasById } from "./kelas-kerusakan";
@@ -26,28 +26,28 @@ export async function analisisFoto(foto: Uint8Array[]): Promise<HasilAnalisis | 
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
     const data = (await res.json()) as HasilAnalisis;
-    if (!Array.isArray(data.foto) || data.foto.length !== foto.length) throw new Error("Jumlah hasil tidak cocok");
+    if (!Array.isArray(data.foto) || data.foto.length !== foto.length) throw new Error("Result count does not match photo count.");
     return data;
   } catch (e) {
-    console.warn("Analisis foto Python dilewati:", e instanceof Error ? e.message : e);
+    console.warn("Python photo analysis skipped:", e instanceof Error ? e.message : e);
     return null;
   }
 }
 
-// Ringkasan per foto untuk prompt AI
+// Per-photo summary for the AI prompt.
 export function petunjukUntukAI(a: AnalisisFoto[]): string {
   return a
     .map((f) => {
-      const bagian = [`kualitas: ${LABEL_KUALITAS[f.kualitas.status].toLowerCase()}`];
+      const bagian = [`photo quality: ${LABEL_KUALITAS[f.kualitas.status].toLowerCase()}`];
       const model = ringkasDeteksi(f.deteksi);
       if (model.length) {
         bagian.push(
-          "model deteksi terlatih: " +
-            model.map((d) => `${d.jumlah}× ${kelasById(d.kelas)?.nama.toLowerCase() ?? d.kelas} (skor maks ${d.skorMaks.toFixed(2)})`).join(", "),
+          "trained detection model: " +
+            model.map((d) => `${d.jumlah}× ${kelasById(d.kelas)?.nama.toLowerCase() ?? d.kelas} (max confidence ${d.skorMaks.toFixed(2)})`).join(", "),
         );
       }
-      if (f.retak.jumlah) bagian.push(`${f.retak.jumlah} garis kandidat retak (total panjang ${(f.retak.panjang_relatif * 100).toFixed(0)}% diagonal foto)`);
-      if (f.noda.jumlah) bagian.push(`${f.noda.jumlah} bercak gelap kandidat noda/rembesan (${f.noda.area_persen.toFixed(1)}% area)`);
+      if (f.retak.jumlah) bagian.push(`${f.retak.jumlah} possible crack line(s) (total length ${(f.retak.panjang_relatif * 100).toFixed(0)}% of photo diagonal)`);
+      if (f.noda.jumlah) bagian.push(`${f.noda.jumlah} possible dark stain/leak mark(s) (${f.noda.area_persen.toFixed(1)}% of area)`);
       return `F${f.indeks}: ${bagian.join("; ")}`;
     })
     .join("\n");

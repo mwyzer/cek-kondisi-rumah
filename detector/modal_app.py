@@ -1,9 +1,9 @@
-"""Latih model deteksi kerusakan di GPU Modal.
+"""Train a damage-detection model on a Modal GPU.
 
     cd detector
     uv run modal run modal_app.py --data ../data/dataset/ekspor --ukuran small --epochs 60
 
-Dataset dikirim dari komputer ini, dilatih di GPU, lalu model disimpan ke ../analyzer/model/.
+The dataset is uploaded from this computer, trained on the GPU, and the model is saved to ../analyzer/model/.
 """
 
 from __future__ import annotations
@@ -57,11 +57,11 @@ def main(data: str = "../data/dataset/ekspor", ukuran: str = "small", epochs: in
     with tarfile.open(fileobj=buf, mode="w:gz") as t:
         for b in latih.BAGIAN:
             t.add(dir_data / b, arcname=b)
-    print(f"Mengirim dataset {buf.tell() / 1e6:.1f} MB ke Modal…")
+    print(f"Uploading {buf.tell() / 1e6:.1f} MB dataset to Modal…")
 
     hasil = latih_gpu.remote(buf.getvalue(), ukuran, epochs, batch)
     dir_keluar = Path(keluar).resolve()
     dir_keluar.mkdir(parents=True, exist_ok=True)
     (dir_keluar / "kerusakan.pth").write_bytes(hasil["pth"])
     (dir_keluar / "kerusakan.json").write_text(hasil["json"], encoding="utf-8")
-    print(f"Model tersimpan di {dir_keluar}. Restart layanan analisis untuk memakainya.")
+    print(f"Model saved to {dir_keluar}. Restart the analysis service to use it.")

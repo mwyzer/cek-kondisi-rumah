@@ -16,10 +16,10 @@ export type PemindaianPublik = {
 };
 
 const LABEL_STATUS: Record<PemindaianPublik["status"], { teks: string; t: string }> = {
-  antre: { teks: "Dalam antrean", t: "na" },
-  memproses: { teks: "Sedang diproses", t: "mild" },
-  selesai: { teks: "Selesai", t: "ok" },
-  gagal: { teks: "Gagal", t: "severe" },
+  antre: { teks: "Queued", t: "na" },
+  memproses: { teks: "Processing", t: "mild" },
+  selesai: { teks: "Complete", t: "ok" },
+  gagal: { teks: "Failed", t: "severe" },
 };
 
 const DURASI_MIN = 10;
@@ -52,7 +52,7 @@ export default function Pemindaian3D({
   const [dibuka, setDibuka] = useState<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
 
-  // Tanya status setiap 10 detik selama ada pemindaian yang belum selesai
+  // Poll every 10 seconds while any scan is still in progress.
   const menunggu = daftar.filter((p) => p.status === "antre" || p.status === "memproses").map((p) => p.id);
   const kunci = menunggu.join(",");
   useEffect(() => {
@@ -73,11 +73,11 @@ export default function Pemindaian3D({
     if (!file || progres != null) return;
     const durasi = await durasiVideo(file);
     if (Number.isFinite(durasi) && (durasi < DURASI_MIN || durasi > DURASI_MAKS)) {
-      setStatus({ teks: `Durasi video ${Math.round(durasi)} detik. Gunakan video ${DURASI_MIN}–${DURASI_MAKS} detik.`, err: true });
+      setStatus({ teks: `Video duration is ${Math.round(durasi)} seconds. Use a video between ${DURASI_MIN} and ${DURASI_MAKS} seconds.`, err: true });
       return;
     }
     setProgres(0);
-    setStatus({ teks: "Mengunggah video…" });
+    setStatus({ teks: "Uploading video…" });
     try {
       const ext = file.type === "video/quicktime" ? "mov" : "mp4";
       const blob = await upload(`pemindaian/${penilaianId}.${ext}`, file, {
@@ -88,20 +88,20 @@ export default function Pemindaian3D({
         multipart: file.size > 20 * 1024 * 1024,
         onUploadProgress: ({ percentage }) => setProgres(Math.round(percentage)),
       });
-      setStatus({ teks: "Memulai pemrosesan 3D…" });
+      setStatus({ teks: "Starting 3D processing…" });
       const res = await fetch("/api/pemindaian", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ penilaianId, ruang, videoUrl: blob.url }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error ?? "Pemindaian gagal dimulai.");
+      if (!res.ok) throw new Error(data.error ?? "Failed to start 3D scan.");
       setDaftar((d) => [...d, { id: data.id, ruang, status: "memproses", splatUrl: null, pesan: null }]);
-      setStatus({ teks: "Video diterima. Model 3D biasanya siap dalam 15–30 menit; halaman ini akan memperbarui sendiri." });
+      setStatus({ teks: "Video received. The 3D model is usually ready in 15–30 minutes; this page will update automatically." });
       setFile(null);
       if (input.current) input.current.value = "";
     } catch (err) {
-      setStatus({ teks: err instanceof Error ? err.message : "Unggahan gagal. Coba lagi.", err: true });
+      setStatus({ teks: err instanceof Error ? err.message : "Upload failed. Please try again.", err: true });
     } finally {
       setProgres(null);
     }
@@ -110,8 +110,8 @@ export default function Pemindaian3D({
   return (
     <div className="section">
       <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
-        <h2>Pemindaian 3D</h2>
-        <span className="foot">Visual saja, tidak memengaruhi skor, indeks, atau kategori.</span>
+        <h2>3D scan</h2>
+        <span className="foot">For visualization only; it does not affect the score, index, or category.</span>
       </div>
 
       {daftar.length > 0 && (
@@ -132,10 +132,10 @@ export default function Pemindaian3D({
                   dibuka === p.id ? (
                     <>
                       <ViewerSplat url={p.splatUrl} label={p.ruang} />
-                      <p className="foot">Seret untuk memutar, gulir atau cubit untuk zoom, klik kanan atau dua jari untuk menggeser.</p>
+                      <p className="foot">Drag to rotate, scroll or pinch to zoom, and right-click or use two fingers to pan.</p>
                     </>
                   ) : (
-                    <button type="button" className="btn ghost" onClick={() => setDibuka(p.id)}>Buka tampilan 3D</button>
+                    <button type="button" className="btn ghost" onClick={() => setDibuka(p.id)}>Open 3D viewer</button>
                   )
                 )}
               </div>
@@ -147,12 +147,12 @@ export default function Pemindaian3D({
       {aktif ? (
         <form className="scan-form" onSubmit={kirim}>
           <div className="fields">
-            <label className="f">Ruangan
+            <label className="f">Room
               <select id="scan-ruang" value={ruang} onChange={(e) => setRuang(e.target.value)} disabled={progres != null}>
                 {RUANG.map((r) => <option key={r}>{r}</option>)}
               </select>
             </label>
-            <label className="f">Video ({DURASI_MIN}–{DURASI_MAKS} detik, MP4/MOV)
+            <label className="f">Video ({DURASI_MIN}–{DURASI_MAKS} seconds, MP4/MOV)
               <input
                 ref={input}
                 id="scan-video"
@@ -164,20 +164,20 @@ export default function Pemindaian3D({
             </label>
           </div>
           <ul className="list foot">
-            <li>Berjalan pelan mengelilingi ruangan, kamera mengarah ke dinding dan sudut.</li>
-            <li>Arahkan juga ke plafon dan lantai; hindari gerakan cepat dan memutar di tempat.</li>
-            <li>Nyalakan lampu atau rekam di siang hari.</li>
+            <li>Walk slowly around the room with the camera pointed at the walls and corners.</li>
+            <li>Capture the ceiling and floor too; avoid quick movements or turning in place.</li>
+            <li>Turn on the lights or record during the day.</li>
           </ul>
           <div className="row">
             <button type="submit" className="btn" style={{ width: "auto" }} disabled={!file || progres != null}>
-              {progres != null ? `Mengunggah ${progres}%` : "Unggah & buat model 3D"}
+              {progres != null ? `Uploading ${progres}%` : "Upload & create 3D model"}
             </button>
           </div>
           {status && <div className={`status${status.err ? " err" : ""}`} role="status" aria-live="polite">{status.teks}</div>}
         </form>
       ) : (
         <p className="muted">
-          Pemindaian 3D belum diaktifkan di server ini. Lihat bagian &quot;Pemindaian 3D&quot; di README untuk mengaktifkannya.
+          3D scanning is not enabled on this server. See the “3D scanning” section in the README to enable it.
         </p>
       )}
     </div>

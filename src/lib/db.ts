@@ -4,7 +4,7 @@ import { mkdirSync } from "node:fs";
 import type { InfoBangunan, Laporan } from "./penilaian";
 import type { AnalisisFoto } from "./analisis-tipe";
 
-// Lokal: file SQLite di ./data. Produksi: isi DATABASE_URL (+ DATABASE_AUTH_TOKEN) dengan URL libSQL/Turso.
+// Local: SQLite file in ./data. Production: set DATABASE_URL (+ DATABASE_AUTH_TOKEN) to a libSQL/Turso URL.
 const url = process.env.DATABASE_URL ?? "file:data/penilaian.db";
 
 let client: Client | undefined;
@@ -67,14 +67,14 @@ function db() {
   return { c: client, siap };
 }
 
-// Koneksi siap pakai untuk modul lain (mis. dataset.ts)
+// Ready-to-use connection for other modules (e.g. dataset.ts).
 export async function koneksi() {
   const { c, siap } = db();
   await siap;
   return c;
 }
 
-// Kolom yang ditambahkan setelah versi pertama
+// Columns added after the initial version.
 async function migrasi(c: Client) {
   const kolom = new Set((await c.execute("PRAGMA table_info(foto)")).rows.map((r) => String(r.name)));
   const tambah = [
@@ -246,7 +246,7 @@ export async function daftarPemindaian(penilaianId: string): Promise<Pemindaian[
   return r.rows.map(kePemindaian);
 }
 
-// Jumlah pemindaian yang dimulai dalam 24 jam terakhir (untuk batas biaya GPU harian)
+// Number of scans started in the last 24 hours (for the daily GPU cost limit).
 export async function jumlahPemindaian24Jam(): Promise<number> {
   const { c, siap } = db();
   await siap;

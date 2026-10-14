@@ -1,10 +1,10 @@
 [project]
 name = "splat"
 version = "0.1.0"
-description = "Worker pemindaian 3D (Gaussian Splatting) di Modal untuk Cek Kondisi Rumah"
+description = "Modal worker for 3D Gaussian Splatting scans for Home Condition Assessment"
 requires-python = ">=3.11"
-# Dependensi lokal hanya untuk tes langkah tanpa GPU dan untuk `modal deploy`.
-# Dependensi GPU (torch, gsplat, COLMAP, ffmpeg) dipasang di image Modal, lihat app.py.
+# Local dependencies are only for testing pipeline steps without a GPU and for `modal deploy`.
+# GPU dependencies (torch, gsplat, COLMAP, ffmpeg) are installed in the Modal image; see app.py.
 dependencies = [
     "modal==1.5.5",
     "fastapi==0.141.1",
@@ -20,5 +20,5 @@ package = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-# analisis.py dipakai ulang dari layanan analyzer
+# Reuse analisis.py from the analyzer service.
 pythonpath = [".", "../analyzer"]

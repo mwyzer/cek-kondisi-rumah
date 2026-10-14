@@ -5,7 +5,7 @@ import path from "node:path";
 import { koneksi } from "./db";
 import { KELAS, KELAS_IDS, type KotakLabel } from "./kelas-kerusakan";
 
-// Alat dataset hanya untuk dipakai lokal (belum ada login). Di produksi harus diaktifkan eksplisit.
+// The dataset tool is local-only (there is no login yet). It must be explicitly enabled in production.
 export const datasetAktif = () => process.env.NODE_ENV !== "production" || process.env.DATASET_AKTIF === "1";
 
 export const DIR_DATASET = path.join(process.cwd(), "data", "dataset");
@@ -40,7 +40,7 @@ function keGambar(x: Record<string, unknown>): GambarDataset {
   };
 }
 
-// Bersihkan kotak dari klien: kelas dikenal, angka bulat, di dalam gambar, tidak terlalu kecil
+// Sanitize client-provided boxes: known classes, integer coordinates, inside the image, and not too small.
 export function bersihkanKotak(raw: unknown, lebar: number, tinggi: number): KotakLabel[] {
   if (!Array.isArray(raw)) return [];
   return raw.slice(0, 200).flatMap((k) => {
@@ -113,13 +113,13 @@ export async function hapusGambar(g: GambarDataset) {
   await unlink(path.join(DIR_GAMBAR, path.basename(g.berkas))).catch(() => {});
 }
 
-// Pembagian train/valid/test yang stabil: gambar yang sama selalu masuk bagian yang sama
+// Keep train/validation/test splits stable so the same image always belongs to the same split.
 export function bagian(id: string): "train" | "valid" | "test" {
   const n = createHash("sha1").update(id).digest()[0] / 256;
   return n < 0.8 ? "train" : n < 0.9 ? "valid" : "test";
 }
 
-// Ekspor ke format COCO yang dibaca RF-DETR: ekspor/{train,valid,test}/_annotations.coco.json + gambar
+// Export in the COCO format read by RF-DETR: ekspor/{train,valid,test}/_annotations.coco.json + images.
 export async function eksporCoco() {
   const gambar = (await daftarGambar()).filter((g) => g.status === "selesai");
   await rm(DIR_EKSPOR, { recursive: true, force: true });

@@ -1,7 +1,7 @@
 [project]
 name = "analyzer"
 version = "0.1.0"
-description = "Analisis foto rumah otomatis (OpenCV): kualitas foto, indikasi retak, indikasi noda/rembesan"
+description = "Automated home photo analysis (OpenCV): photo quality, crack indicators, and stain/leak indicators"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115",
@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Model deteksi kerusakan RF-DETR (Apache 2.0). Pasang dengan: uv sync --extra deteksi
+# Optional RF-DETR damage-detection model (Apache 2.0). Install with: uv sync --extra deteksi
 deteksi = ["rfdetr==1.11.0"]
 
 [dependency-groups]

@@ -68,7 +68,7 @@ def test_retak_di_antara_nat_tetap_terdeteksi():
 
 
 def test_kotak_saran_label():
-    img = retak_berliku(dinding())  # retak kira-kira dari (200,150) ke kanan bawah
+    img = retak_berliku(dinding())  # Crack running roughly from (200, 150) to the lower right.
     r = analisis_foto(jpeg(img), 1)
     retak = [k for k in r["kotak"] if k["kelas"] == "retak"]
     assert retak, "retak harus menghasilkan kotak"

@@ -12,7 +12,7 @@ type Props = {
   awal: KotakLabel[];
   saran: KotakLabel[];
   status: "belum" | "selesai" | "dilewati";
-  posisi: string; // "3 dari 40"
+  posisi: string; // "3 of 40"
   sebelumnya: string | null;
   berikutnya: string | null;
 };
@@ -44,15 +44,15 @@ export default function AlatLabel(p: Props) {
   const [status, setStatus] = useState<{ teks: string; err?: boolean } | null>(null);
   const [konfirmasiHapus, setKonfirmasiHapus] = useState(false);
   const seret = useRef<Seret | null>(null);
-  // Draf terbaru juga disimpan di ref: pointerup bisa datang sebelum render setelah pointermove terakhir
+  // Keep the latest draft in a ref: pointerup can arrive before the render after the last pointermove.
   const drafRef = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
 
   const W = p.lebar, H = p.tinggi;
-  const MIN = Math.max(W, H) * 0.008; // kotak lebih kecil dari ini dianggap klik
+  const MIN = Math.max(W, H) * 0.008; // Smaller boxes are treated as clicks.
   const ukuranPegangan = Math.max(W, H) * 0.014;
   const ukuranTeks = Math.max(W, H) * 0.02;
 
-  // Setiap perubahan dicatat ke riwayat (maks. 50 langkah) untuk Undo
+  // Record each change in the undo history (maximum 50 steps).
   function ubahKotak(ubah: (k: KotakLabel[]) => KotakLabel[]) {
     setRiwayat((r) => [...r.slice(-49), kotak]);
     setKotak(ubah(kotak));
@@ -142,19 +142,19 @@ export default function AlatLabel(p: Props) {
 
   const simpan = useCallback(
     async (st: "selesai" | "dilewati", lanjut: boolean) => {
-      setStatus({ teks: "Menyimpan…" });
+      setStatus({ teks: "Saving…" });
       const res = await fetch(`/api/dataset/gambar/${p.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ kotak, status: st }),
       });
       if (!res.ok) {
-        setStatus({ teks: "Gagal menyimpan. Coba lagi.", err: true });
+        setStatus({ teks: "Failed to save. Please try again.", err: true });
         return;
       }
       setBerubah(false);
       if (lanjut) router.push(p.berikutnya ? `/dataset/${p.berikutnya}` : "/dataset");
-      else setStatus({ teks: st === "selesai" ? `Tersimpan (${kotak.length} kotak).` : "Ditandai dilewati." });
+      else setStatus({ teks: st === "selesai" ? `Saved (${kotak.length} box(es)).` : "Marked as skipped." });
     },
     [kotak, p.id, p.berikutnya, router],
   );
@@ -162,10 +162,10 @@ export default function AlatLabel(p: Props) {
   async function hapus() {
     const res = await fetch(`/api/dataset/gambar/${p.id}`, { method: "DELETE" });
     if (res.ok) router.push(p.berikutnya ? `/dataset/${p.berikutnya}` : "/dataset");
-    else setStatus({ teks: "Gagal menghapus.", err: true });
+    else setStatus({ teks: "Failed to delete photo.", err: true });
   }
 
-  // Tombol pintas
+  // Keyboard shortcuts.
   useEffect(() => {
     function tombol(e: KeyboardEvent) {
       const tag = (e.target as HTMLElement).tagName;
@@ -198,7 +198,7 @@ export default function AlatLabel(p: Props) {
     return () => window.removeEventListener("keydown", tombol);
   });
 
-  // Peringatan bila meninggalkan halaman dengan perubahan belum tersimpan
+  // Warn before leaving with unsaved changes.
   useEffect(() => {
     if (!berubah) return;
     const h = (e: BeforeUnloadEvent) => e.preventDefault();
@@ -212,7 +212,7 @@ export default function AlatLabel(p: Props) {
     <div className="label-tool">
       <div className="label-canvas">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={`/api/dataset/gambar/${p.id}`} alt="Foto yang sedang dilabel" draggable={false} />
+        <img src={`/api/dataset/gambar/${p.id}`} alt="Photo being labeled" draggable={false} />
         <svg
           ref={svg}
           viewBox={`0 0 ${W} ${H}`}
@@ -222,13 +222,13 @@ export default function AlatLabel(p: Props) {
           onPointerUp={selesai}
           onPointerCancel={selesai}
           role="application"
-          aria-label="Area label: seret untuk menggambar kotak kerusakan"
+          aria-label="Labeling area: drag to draw a damage bounding box"
         >
           {saran.map((k, i) => (
             <rect key={`s${i}`} x={k.x} y={k.y} width={k.w} height={k.h} className="kotak-saran"
               stroke={kelasById(k.kelas)?.warna} vectorEffect="non-scaling-stroke"
               onPointerDown={(e) => { e.stopPropagation(); terimaSaran(i); }}>
-              <title>{`Saran: ${kelasById(k.kelas)?.nama}. Klik untuk menerima.`}</title>
+              <title>{`Suggestion: ${kelasById(k.kelas)?.nama}. Click to accept.`}</title>
             </rect>
           ))}
           {kotak.map((k, i) => {
@@ -261,14 +261,14 @@ export default function AlatLabel(p: Props) {
         <div className="row" style={{ justifyContent: "space-between" }}>
           <span className="eyebrow">Foto {p.posisi}</span>
           <span className="row" style={{ gap: 6 }}>
-            {p.sebelumnya && <Link className="btn ghost" href={`/dataset/${p.sebelumnya}`} aria-label="Foto sebelumnya">←</Link>}
-            {p.berikutnya && <Link className="btn ghost" href={`/dataset/${p.berikutnya}`} aria-label="Foto berikutnya">→</Link>}
+            {p.sebelumnya && <Link className="btn ghost" href={`/dataset/${p.sebelumnya}`} aria-label="Previous photo">←</Link>}
+            {p.berikutnya && <Link className="btn ghost" href={`/dataset/${p.berikutnya}`} aria-label="Next photo">→</Link>}
           </span>
         </div>
 
         <div>
-          <h3>Kelas {terpilih ? "kotak terpilih" : "untuk kotak baru"}</h3>
-          <div className="kelas-list" role="radiogroup" aria-label="Kelas kerusakan">
+          <h3>Class {terpilih ? "for selected box" : "for new box"}</h3>
+          <div className="kelas-list" role="radiogroup" aria-label="Damage class">
             {KELAS.map((k, i) => (
               <button key={k.id} type="button" role="radio" aria-checked={kelas === k.id}
                 className={`kelas-btn${kelas === k.id ? " aktif" : ""}`} title={k.petunjuk}
@@ -285,10 +285,10 @@ export default function AlatLabel(p: Props) {
 
         {saran.length > 0 && (
           <div className="saran-box">
-            <p><strong>{saran.length} saran otomatis</strong> (garis putus-putus). Klik satu saran untuk menerimanya, atau:</p>
+            <p><strong>{saran.length} automatic suggestion(s)</strong> (dashed outlines). Click a suggestion to accept it, or:</p>
             <div className="row">
-              <button type="button" className="btn ghost" onClick={() => terimaSaran()}>Terima semua (A)</button>
-              <button type="button" className="btn ghost" onClick={() => setSaran([])}>Abaikan</button>
+              <button type="button" className="btn ghost" onClick={() => terimaSaran()}>Accept all (A)</button>
+              <button type="button" className="btn ghost" onClick={() => setSaran([])}>Dismiss</button>
             </div>
           </div>
         )}
@@ -296,7 +296,7 @@ export default function AlatLabel(p: Props) {
         <div className="row">
           {terpilih && (
             <button type="button" className="btn ghost" onClick={() => { ubahKotak((ks) => ks.filter((_, i) => i !== pilih)); setPilih(null); }}>
-              Hapus kotak (Del)
+              Delete box (Del)
             </button>
           )}
           <button type="button" className="btn ghost" disabled={!riwayat.length} onClick={undo}>
@@ -305,30 +305,30 @@ export default function AlatLabel(p: Props) {
         </div>
 
         <button type="button" className="btn" onClick={() => simpan("selesai", true)}>
-          {kotak.length ? `Simpan ${kotak.length} kotak & lanjut (Enter)` : "Simpan tanpa kerusakan & lanjut (Enter)"}
+          {kotak.length ? `Save ${kotak.length} box(es) & continue (Enter)` : "Save as no damage & continue (Enter)"}
         </button>
         <div className="row">
-          <button type="button" className="btn ghost" onClick={() => simpan("dilewati", true)}>Lewati foto</button>
+          <button type="button" className="btn ghost" onClick={() => simpan("dilewati", true)}>Skip photo</button>
           {konfirmasiHapus ? (
             <>
-              <button type="button" className="btn ghost t-severe" onClick={hapus}>Ya, hapus foto</button>
-              <button type="button" className="btn ghost" onClick={() => setKonfirmasiHapus(false)}>Batal</button>
+              <button type="button" className="btn ghost t-severe" onClick={hapus}>Yes, delete photo</button>
+              <button type="button" className="btn ghost" onClick={() => setKonfirmasiHapus(false)}>Cancel</button>
             </>
           ) : (
-            <button type="button" className="btn ghost" onClick={() => setKonfirmasiHapus(true)}>Hapus foto…</button>
+            <button type="button" className="btn ghost" onClick={() => setKonfirmasiHapus(true)}>Delete photo…</button>
           )}
         </div>
         {status && <div className={`status${status.err ? " err" : ""}`} role="status" aria-live="polite">{status.teks}</div>}
-        {berubah && !status && <div className="status">Ada perubahan yang belum disimpan.</div>}
+        {berubah && !status && <div className="status">You have unsaved changes.</div>}
 
         <details className="foot">
-          <summary>Cara melabel</summary>
+          <summary>How to label</summary>
           <ul className="list">
-            <li>Seret di foto untuk menggambar kotak dengan kelas yang dipilih.</li>
-            <li>Klik kotak untuk memilihnya; seret untuk memindahkan, seret sudutnya untuk mengubah ukuran.</li>
-            <li>Tombol 1–{KELAS.length} memilih kelas (juga mengganti kelas kotak terpilih).</li>
-            <li>Kotak harus rapat mengelilingi kerusakan. Retak panjang boleh dipecah jadi beberapa kotak.</li>
-            <li>Foto tanpa kerusakan tetap disimpan (tanpa kotak) agar model belajar apa yang bukan kerusakan.</li>
+            <li>Drag on the photo to draw a box using the selected class.</li>
+            <li>Click a box to select it; drag to move it or drag a corner to resize it.</li>
+            <li>Keys 1–{KELAS.length} select a class (and change the selected box's class).</li>
+            <li>Draw boxes tightly around damage. Long cracks may be split into several boxes.</li>
+            <li>Save photos without damage (no boxes) so the model can learn what is not damage.</li>
           </ul>
         </details>
       </aside>

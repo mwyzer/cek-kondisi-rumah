@@ -1,47 +1,63 @@
-// Aturan penilaian: dipakai bersama oleh API (server) dan halaman laporan.
-// AI hanya memberi skor 1–5 per komponen; semua angka turunan dihitung di sini.
+// Assessment rules shared by the server API and report page.
+// AI only assigns a score from 1 to 5 per component; all derived values are calculated here.
 
 export const KOMPONEN = [
-  { id: "struktur", kode: "K-01", nama: "Struktur (pondasi, kolom, balok)", bobot: 25 },
-  { id: "atap", kode: "K-02", nama: "Atap & talang", bobot: 20 },
-  { id: "dinding", kode: "K-03", nama: "Dinding", bobot: 15 },
-  { id: "lantai", kode: "K-04", nama: "Lantai", bobot: 10 },
-  { id: "plafon", kode: "K-05", nama: "Plafon", bobot: 10 },
-  { id: "kusen", kode: "K-06", nama: "Pintu, jendela & kusen", bobot: 8 },
-  { id: "utilitas", kode: "K-07", nama: "Utilitas (listrik, air, sanitasi)", bobot: 7 },
-  { id: "finishing", kode: "K-08", nama: "Finishing & cat", bobot: 5 },
+  { id: "struktur", kode: "K-01", nama: "Structure (foundation, columns, beams)", bobot: 25 },
+  { id: "atap", kode: "K-02", nama: "Roof and gutters", bobot: 20 },
+  { id: "dinding", kode: "K-03", nama: "Walls", bobot: 15 },
+  { id: "lantai", kode: "K-04", nama: "Flooring", bobot: 10 },
+  { id: "plafon", kode: "K-05", nama: "Ceiling", bobot: 10 },
+  { id: "kusen", kode: "K-06", nama: "Doors, windows, and frames", bobot: 8 },
+  { id: "utilitas", kode: "K-07", nama: "Utilities (electrical, plumbing, sanitation)", bobot: 7 },
+  { id: "finishing", kode: "K-08", nama: "Finishes and paint", bobot: 5 },
 ] as const;
 
 export type KomponenId = (typeof KOMPONEN)[number]["id"];
 export const KOMPONEN_IDS = KOMPONEN.map((k) => k.id) as [KomponenId, ...KomponenId[]];
 
 export const URGENSI = {
-  segera: { label: "Segera", urut: 0 },
-  "3_bulan": { label: "≤ 3 bulan", urut: 1 },
-  "12_bulan": { label: "≤ 12 bulan", urut: 2 },
-  pemantauan: { label: "Pantau saja", urut: 3 },
+  segera: { label: "Immediate", urut: 0 },
+  "3_bulan": { label: "Within 3 months", urut: 1 },
+  "12_bulan": { label: "Within 12 months", urut: 2 },
+  pemantauan: { label: "Monitor", urut: 3 },
 } as const;
 export type Urgensi = keyof typeof URGENSI;
 export const URGENSI_IDS = Object.keys(URGENSI) as [Urgensi, ...Urgensi[]];
 
 export const RUANG = [
-  "Fasad depan", "Atap", "Ruang tamu", "Kamar tidur", "Dapur", "Kamar mandi",
-  "Plafon", "Lantai", "Teras / carport", "Halaman / pagar", "Detail kerusakan", "Lainnya",
+  "Front exterior", "Roof", "Living room", "Bedroom", "Kitchen", "Bathroom",
+  "Ceiling", "Floor", "Porch / carport", "Yard / fence", "Damage detail", "Other",
 ];
+
+const LEGACY_ROOM_LABELS: Record<string, string> = {
+  "Fasad depan": "Front exterior",
+  Atap: "Roof",
+  "Ruang tamu": "Living room",
+  "Kamar tidur": "Bedroom",
+  Dapur: "Kitchen",
+  "Kamar mandi": "Bathroom",
+  Plafon: "Ceiling",
+  Lantai: "Floor",
+  "Teras / carport": "Porch / carport",
+  "Halaman / pagar": "Yard / fence",
+  "Detail kerusakan": "Damage detail",
+  Lainnya: "Other",
+};
+export const roomLabel = (room: string) => LEGACY_ROOM_LABELS[room] ?? room;
 
 export const MAX_FOTO = 10;
 
-// Skor 1–5 → persentase kerusakan komponen
+// Score 1–5 → component damage percentage
 const RUSAK: Record<number, number> = { 5: 0, 4: 10, 3: 30, 2: 55, 1: 85 };
 
 export type HasilKomponen = {
-  skor: number | null; // null = tidak terlihat di foto
+  skor: number | null; // null = not visible in the photos
   temuan: string[];
   rekomendasi: string;
   urgensi: Urgensi;
   biaya_min: number;
   biaya_max: number;
-  foto: number[]; // nomor foto (1-based)
+  foto: number[]; // 1-based photo numbers
 };
 
 export type Laporan = {
@@ -57,26 +73,26 @@ export type InfoBangunan = { tipe?: string; umur?: string; lantai?: string; kota
 export type Tingkat = "ok" | "mild" | "mid" | "severe" | "na";
 
 export function kategori(rusakPct: number | null): { label: string; tingkat: Tingkat } {
-  if (rusakPct == null) return { label: "Belum dapat dinilai", tingkat: "na" };
-  if (rusakPct < 10) return { label: "Baik", tingkat: "ok" };
-  if (rusakPct <= 30) return { label: "Rusak Ringan", tingkat: "mild" };
-  if (rusakPct <= 45) return { label: "Rusak Sedang", tingkat: "mid" };
-  return { label: "Rusak Berat", tingkat: "severe" };
+  if (rusakPct == null) return { label: "Not assessable", tingkat: "na" };
+  if (rusakPct < 10) return { label: "Good", tingkat: "ok" };
+  if (rusakPct <= 30) return { label: "Minor damage", tingkat: "mild" };
+  if (rusakPct <= 45) return { label: "Moderate damage", tingkat: "mid" };
+  return { label: "Severe damage", tingkat: "severe" };
 }
 
 export function statusSkor(s: number | null): { label: string; tingkat: Tingkat } {
-  if (s == null) return { label: "Tidak terlihat", tingkat: "na" };
-  if (s >= 5) return { label: "Sangat baik", tingkat: "ok" };
-  if (s === 4) return { label: "Baik", tingkat: "ok" };
-  if (s === 3) return { label: "Rusak ringan", tingkat: "mild" };
-  if (s === 2) return { label: "Rusak sedang", tingkat: "mid" };
-  return { label: "Rusak berat", tingkat: "severe" };
+  if (s == null) return { label: "Not visible", tingkat: "na" };
+  if (s >= 5) return { label: "Excellent", tingkat: "ok" };
+  if (s === 4) return { label: "Good", tingkat: "ok" };
+  if (s === 3) return { label: "Minor damage", tingkat: "mild" };
+  if (s === 2) return { label: "Moderate damage", tingkat: "mid" };
+  return { label: "Severe damage", tingkat: "severe" };
 }
 
-// Di bawah ambang ini (persen bobot komponen yang terlihat) indeks dan kategori tidak ditampilkan
+// Do not show the index or category below this visible component-weight coverage threshold.
 export const CAKUPAN_MIN = 50;
 
-// Rata-rata berbobot; komponen tak terlihat dikeluarkan dan bobotnya dinormalkan ulang
+// Weighted average; exclude invisible components and renormalize the remaining weights.
 export function hitung(lap: Laporan) {
   let w = 0, d = 0, min = 0, max = 0;
   for (const k of KOMPONEN) {
@@ -97,11 +113,11 @@ export function hitung(lap: Laporan) {
     cukup,
     biayaMin: min,
     biayaMax: max,
-    kategori: cukup ? kategori(rusak) : { label: "Belum cukup data", tingkat: "na" as const },
+    kategori: cukup ? kategori(rusak) : { label: "Insufficient data", tingkat: "na" as const },
   };
 }
 
-// Membersihkan jawaban AI: skor di luar 1–5 jadi null, biaya tidak negatif, nomor foto valid
+// Normalize AI output: scores outside 1–5 become null, costs are non-negative, and photo references are valid.
 export function normalisasi(raw: Laporan, jumlahFoto: number): Laporan {
   const komponen = {} as Laporan["komponen"];
   for (const k of KOMPONEN) {
@@ -129,7 +145,7 @@ export function normalisasi(raw: Laporan, jumlahFoto: number): Laporan {
   };
 }
 
-const fmt = new Intl.NumberFormat("id-ID");
-export const rp = (n: number) => "Rp" + fmt.format(Math.round(n));
+const fmt = new Intl.NumberFormat("en-US");
+export const rp = (n: number) => "IDR " + fmt.format(Math.round(n));
 export const rpRange = (a: number, b: number) => (!a && !b ? "—" : a === b ? rp(a) : `${rp(a)} – ${rp(b)}`);
-export const persen = (n: number) => n.toFixed(1).replace(".", ",") + "%";
+export const persen = (n: number) => n.toFixed(1) + "%";

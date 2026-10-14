@@ -4,7 +4,7 @@ import AlatLabel from "@/components/AlatLabel";
 import { datasetAktif, daftarGambar } from "@/lib/dataset";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Label kerusakan" };
+export const metadata = { title: "Damage Labeling" };
 
 export default async function HalamanLabel({ params }: PageProps<"/dataset/[id]">) {
   if (!datasetAktif()) notFound();
@@ -13,7 +13,7 @@ export default async function HalamanLabel({ params }: PageProps<"/dataset/[id]"
   const i = semua.findIndex((g) => g.id === id);
   if (i < 0) notFound();
   const g = semua[i];
-  // "Berikutnya" mengutamakan foto yang belum dilabel
+  // Prefer the next unlabeled photo.
   const berikutnyaBelum = [...semua.slice(i + 1), ...semua.slice(0, i)].find((x) => x.status === "belum");
   const berikutnya = berikutnyaBelum?.id ?? semua[i + 1]?.id ?? null;
 
@@ -21,7 +21,7 @@ export default async function HalamanLabel({ params }: PageProps<"/dataset/[id]"
     <>
       <header className="hero" style={{ marginBottom: 16, paddingBottom: 12 }}>
         <Link href="/dataset" className="eyebrow" style={{ textDecoration: "none" }}>← Dataset</Link>
-        <h1 style={{ fontSize: "1.6rem" }}>Label kerusakan</h1>
+        <h1 style={{ fontSize: "1.6rem" }}>Damage labeling</h1>
       </header>
       <AlatLabel
         key={g.id}
@@ -31,7 +31,7 @@ export default async function HalamanLabel({ params }: PageProps<"/dataset/[id]"
         awal={g.kotak}
         saran={g.saran}
         status={g.status}
-        posisi={`${i + 1} dari ${semua.length}`}
+        posisi={`${i + 1} of ${semua.length}`}
         sebelumnya={semua[i - 1]?.id ?? null}
         berikutnya={berikutnya}
       />

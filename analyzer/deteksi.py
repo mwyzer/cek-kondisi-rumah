@@ -1,7 +1,7 @@
-"""Deteksi kerusakan dengan model RF-DETR hasil latihan (opsional).
+"""Optional damage detection with a trained RF-DETR model.
 
-Aktif bila `model/kerusakan.pth` ada dan paket rfdetr terpasang (`uv sync --extra deteksi`).
-Model dilatih dengan folder detector/ dari dataset yang dilabel di halaman /dataset.
+Enabled when `model/kerusakan.pth` exists and the rfdetr package is installed (`uv sync --extra deteksi`).
+Train the model using `detector/` and the dataset labeled on the `/dataset` page.
 """
 
 from __future__ import annotations
@@ -15,9 +15,9 @@ import numpy as np
 
 DIR_MODEL = Path(__file__).resolve().parent / "model"
 MODEL = DIR_MODEL / "kerusakan.pth"
-AMBANG = 0.4  # skor minimum; naikkan bila terlalu banyak deteksi palsu
+AMBANG = 0.4  # Minimum confidence; increase if there are too many false detections.
 
-# Warna kelas (BGR) — samakan dengan src/lib/kelas-kerusakan.ts
+# Class colors (BGR); keep in sync with src/lib/kelas-kerusakan.ts.
 WARNA_HEX = {
     "retak": "#e5484d", "rembesan": "#f76b15", "jamur": "#30a46c", "cat_mengelupas": "#ffc53d",
     "plester_rusak": "#8e4ec6", "karat": "#a35829", "kayu_lapuk": "#6e56cf", "keramik_rusak": "#0090ff",
@@ -31,18 +31,18 @@ _pesan: str | None = None
 
 
 def _muat():
-    """Muat model sekali. Mengembalikan None (dengan pesan) bila tidak tersedia."""
+    """Load the model once. Return None with a message if it is unavailable."""
     global _model, _pesan
     with _kunci:
         if _model is not None or _pesan is not None:
             return _model
         if not MODEL.exists():
-            _pesan = f"Model belum ada ({MODEL.relative_to(DIR_MODEL.parent)})."
+            _pesan = f"Model not found ({MODEL.relative_to(DIR_MODEL.parent)})."
             return None
         try:
             from rfdetr import RFDETR
         except ImportError:
-            _pesan = "Paket rfdetr belum terpasang (uv sync --extra deteksi)."
+            _pesan = "The rfdetr package is not installed (uv sync --extra deteksi)."
             return None
         _model = RFDETR.from_checkpoint(str(MODEL))
         return _model
@@ -56,12 +56,12 @@ def info() -> dict:
 
 
 def deteksi(img_bgr: np.ndarray) -> list[dict]:
-    """Kotak kerusakan dalam koordinat gambar masukan: [{kelas, skor, x, y, w, h}]."""
+    """Return damage boxes in input-image coordinates: [{kelas, skor, x, y, w, h}]."""
     model = _muat()
     if model is None:
         return []
     rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-    with _kunci:  # model torch tidak dijamin aman dipakai paralel
+    with _kunci:  # Concurrent access to the torch model is not guaranteed to be safe.
         det = model.predict(rgb, threshold=AMBANG, include_source_image=False)
     nama = det.data.get("class_name")
     h, w = img_bgr.shape[:2]
@@ -80,7 +80,7 @@ def deteksi(img_bgr: np.ndarray) -> list[dict]:
 
 
 def gambar_kotak(out: np.ndarray, kotak: list[dict], skala: float) -> None:
-    """Gambar kotak deteksi (koordinat foto asli) ke gambar `out` yang sudah diperkecil dengan `skala`."""
+    """Draw detection boxes (original-photo coordinates) on `out`, resized by `skala`."""
     tebal = max(2, round(out.shape[1] / 300))
     for k in kotak:
         warna = WARNA.get(k["kelas"], (255, 255, 255))

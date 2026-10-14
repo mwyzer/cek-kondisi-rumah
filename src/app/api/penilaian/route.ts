@@ -6,8 +6,8 @@ import { hitung, MAX_FOTO, normalisasi, type InfoBangunan } from "@/lib/penilaia
 
 export const maxDuration = 300;
 
-const MAX_BYTES = 5 * 1024 * 1024; // per foto, setelah diperkecil di browser
-const MAX_THUMB = 200_000; // panjang data URL thumbnail
+const MAX_BYTES = 5 * 1024 * 1024; // per photo, after resizing in the browser
+const MAX_THUMB = 200_000; // thumbnail data URL length
 
 const teks = (v: FormDataEntryValue | null, max = 80) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 
@@ -16,21 +16,21 @@ export async function POST(req: Request) {
   try {
     form = await req.formData();
   } catch {
-    return NextResponse.json({ error: "Format permintaan tidak valid." }, { status: 400 });
+    return NextResponse.json({ error: "Invalid request format." }, { status: 400 });
   }
 
   const files = form.getAll("foto").filter((f): f is File => f instanceof File);
-  const labels = form.getAll("label").map((l) => teks(l) || "Lainnya");
+  const labels = form.getAll("label").map((l) => teks(l) || "Other");
   const thumbs = form.getAll("thumb").map((t) => (typeof t === "string" ? t : ""));
 
-  if (files.length === 0) return NextResponse.json({ error: "Unggah minimal 1 foto." }, { status: 400 });
-  if (files.length > MAX_FOTO) return NextResponse.json({ error: `Maksimal ${MAX_FOTO} foto.` }, { status: 400 });
+  if (files.length === 0) return NextResponse.json({ error: "Upload at least one photo." }, { status: 400 });
+  if (files.length > MAX_FOTO) return NextResponse.json({ error: `Maximum ${MAX_FOTO} photos allowed.` }, { status: 400 });
   for (const f of files) {
-    if (f.type !== "image/jpeg") return NextResponse.json({ error: "Foto harus dikirim sebagai JPEG." }, { status: 400 });
-    if (f.size > MAX_BYTES) return NextResponse.json({ error: "Ukuran foto terlalu besar." }, { status: 413 });
+    if (f.type !== "image/jpeg") return NextResponse.json({ error: "Photos must be submitted as JPEG files." }, { status: 400 });
+    if (f.size > MAX_BYTES) return NextResponse.json({ error: "Photo file is too large." }, { status: 413 });
   }
   if (thumbs.some((t) => !t.startsWith("data:image/jpeg;base64,") || t.length > MAX_THUMB)) {
-    return NextResponse.json({ error: "Thumbnail foto tidak valid." }, { status: 400 });
+    return NextResponse.json({ error: "Invalid photo thumbnail." }, { status: 400 });
   }
 
   const info: InfoBangunan = {
@@ -41,20 +41,20 @@ export async function POST(req: Request) {
   };
 
   const foto = await Promise.all(
-    files.map(async (f, i) => ({ data: new Uint8Array(await f.arrayBuffer()), label: labels[i] ?? "Lainnya" })),
+    files.map(async (f, i) => ({ data: new Uint8Array(await f.arrayBuffer()), label: labels[i] ?? "Other" })),
   );
 
-  // 1) Analisis gambar otomatis (Python/OpenCV), opsional
+  // 1) Optional automated image analysis (Python/OpenCV).
   const cv = await analisisFoto(foto.map((f) => f.data));
 
-  // 2) Penilaian AI, dengan hasil analisis sebagai petunjuk
+  // 2) AI assessment, using image-analysis results as hints.
   let hasil;
   try {
     hasil = await nilaiRumah(foto, info, cv ? petunjukUntukAI(cv.foto) : undefined);
   } catch (e) {
-    console.error("Penilaian AI gagal:", e);
+    console.error("AI assessment failed:", e);
     return NextResponse.json(
-      { error: "AI gagal menilai foto. Coba lagi, atau kurangi jumlah foto." },
+      { error: "AI could not assess the photos. Please try again or upload fewer photos." },
       { status: 502 },
     );
   }

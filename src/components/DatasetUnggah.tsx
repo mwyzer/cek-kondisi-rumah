@@ -6,7 +6,7 @@ import { kanvasDari, keJpeg, TIPE_GAMBAR } from "@/lib/gambar-klien";
 
 const PER_KIRIM = 5;
 
-// Unggah banyak foto ke dataset; diperkecil ke sisi terpanjang 2048 px (cukup untuk melatih model)
+// Upload photos to the dataset; resize to a maximum dimension of 2048 px for model training.
 export default function DatasetUnggah() {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
@@ -29,21 +29,21 @@ export default function DatasetUnggah() {
           form.append("lebar", String(c.width));
           form.append("tinggi", String(c.height));
         }
-        setStatus({ teks: `Mengunggah dan membuat saran label… ${selesai}/${files.length}` });
+        setStatus({ teks: `Uploading and generating label suggestions… ${selesai}/${files.length}` });
         const res = await fetch("/api/dataset/gambar", { method: "POST", body: form });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.error ?? "Unggahan gagal.");
+        if (!res.ok) throw new Error(data.error ?? "Upload failed.");
         if (!data.saran) tanpaSaran = true;
         selesai += data.ids.length;
       }
       setStatus({
         teks:
-          `${selesai} foto ditambahkan.` +
-          (tanpaSaran ? " Saran label otomatis tidak tersedia karena layanan analisis Python tidak berjalan." : ""),
+          `${selesai} photo(s) added.` +
+          (tanpaSaran ? " Automatic label suggestions are unavailable because the Python analyzer is not running." : ""),
       });
       router.refresh();
     } catch (e) {
-      setStatus({ teks: `${selesai} foto tersimpan, lalu gagal: ${e instanceof Error ? e.message : "kesalahan"}`, err: true });
+      setStatus({ teks: `${selesai} photo(s) saved before an error: ${e instanceof Error ? e.message : "Unknown error"}`, err: true });
       router.refresh();
     } finally {
       setBusy(false);
@@ -62,8 +62,8 @@ export default function DatasetUnggah() {
         onDragLeave={() => setOver(false)}
         onDrop={(e) => { e.preventDefault(); setOver(false); unggah(e.dataTransfer.files); }}
       >
-        <strong>{busy ? "Mengunggah…" : "Tambah foto ke dataset"}</strong>
-        <span className="muted" style={{ fontSize: "0.82rem" }}>Pilih atau seret banyak foto sekaligus · JPG, PNG, WebP</span>
+        <strong>{busy ? "Uploading…" : "Add photos to dataset"}</strong>
+        <span className="muted" style={{ fontSize: "0.82rem" }}>Choose or drag multiple photos · JPG, PNG, WebP</span>
       </button>
       <input ref={input} id="dataset-foto" type="file" multiple hidden accept={TIPE_GAMBAR.join(",")} onChange={(e) => unggah(e.target.files)} />
       {status && <div className={`status${status.err ? " err" : ""}`} role="status" aria-live="polite">{status.teks}</div>}

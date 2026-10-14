@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-// Viewer Gaussian Splatting (Spark + three.js). Dimuat dinamis tanpa SSR dari Pemindaian3D.
+// Gaussian Splatting viewer (Spark + three.js), dynamically loaded without SSR by Pemindaian3D.
 export default function ViewerSplat({ url, label }: { url: string; label: string }) {
   const wadah = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<"memuat" | "siap" | "gagal">("memuat");
@@ -31,7 +31,7 @@ export default function ViewerSplat({ url, label }: { url: string; label: string
         scene.add(spark);
 
         const mesh = new SplatMesh({ url });
-        // Koordinat COLMAP/OpenCV (y ke bawah) → three.js (y ke atas)
+        // Convert COLMAP/OpenCV coordinates (y points down) to three.js coordinates (y points up).
         mesh.quaternion.set(1, 0, 0, 0);
         scene.add(mesh);
 
@@ -58,7 +58,7 @@ export default function ViewerSplat({ url, label }: { url: string; label: string
         await mesh.initialized;
         if (batal) return bersihkan();
 
-        // Arahkan kamera ke tengah model, mundur sejauh ukuran model
+        // Point the camera at the model center, offset by its size.
         const kotak = mesh.getBoundingBox(true).applyMatrix4(mesh.matrixWorld);
         const pusat = kotak.getCenter(new THREE.Vector3());
         const ukuran = kotak.getSize(new THREE.Vector3()).length() || 1;
@@ -84,10 +84,10 @@ export default function ViewerSplat({ url, label }: { url: string; label: string
   }, [url]);
 
   return (
-    <div className="viewer3d" ref={wadah} role="img" aria-label={`Tampilan 3D ${label}. Seret untuk memutar, gulir atau cubit untuk zoom.`}>
+    <div className="viewer3d" ref={wadah} role="img" aria-label={`3D view of ${label}. Drag to rotate, scroll or pinch to zoom.`}>
       {status !== "siap" && (
         <div className="viewer3d-msg">
-          {status === "memuat" ? "Memuat model 3D…" : "Model 3D tidak dapat ditampilkan di perangkat ini (butuh WebGL2)."}
+          {status === "memuat" ? "Loading 3D model…" : "The 3D model cannot be displayed on this device (WebGL2 required)."}
         </div>
       )}
     </div>

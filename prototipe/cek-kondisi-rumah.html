@@ -1,18 +1,18 @@
-<title>Cek Kondisi Rumah</title>
+<title>Home Condition Assessment</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,500..800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: lembar inspeksi surveyor — kolom input foto di kiri, laporan bernomor komponen di kanan; satu kolom di ponsel */
+/* Surveyor inspection sheet: photo input on the left, numbered component report on the right; single column on mobile. */
 :root {
   --paper: #f3f5f4;
   --sheet: #ffffff;
   --ink: #17242b;
   --ink-2: #4c5b62;
   --rule: #d5dcdc;
-  --accent: #1d5f74;      /* biru cetak biru */
+  --accent: #1d5f74;      /* Blueprint blue. */
   --accent-ink: #ffffff;
-  --tape: #f2c230;        /* kuning meteran, dipakai hemat */
+  --tape: #f2c230;        /* Measuring-tape yellow, used sparingly. */
   --ok: #2f7d4f;
   --mild: #a27a06;
   --mid: #c45a12;
@@ -140,50 +140,50 @@ td.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-s
 <div class="wrap">
   <header class="top">
     <div>
-      <div class="row" style="margin-bottom:8px"><span class="tape">Inspeksi visual · AI</span></div>
-      <h1>Cek Kondisi Rumah</h1>
-      <p>Unggah foto bagian rumah. AI memeriksa tiap komponen bangunan, memberi skor 1–5, mengelompokkan tingkat kerusakan, dan menyusun prioritas perbaikan beserta kisaran biaya.</p>
+      <div class="row" style="margin-bottom:8px"><span class="tape">Visual inspection · AI</span></div>
+      <h1>Home Condition Assessment</h1>
+      <p>Upload photos of the home. AI assesses each building component, assigns scores from 1 to 5, classifies damage, and provides repair priorities with estimated cost ranges.</p>
     </div>
-    <div class="eyebrow">Klasifikasi: Baik · Rusak Ringan · Sedang · Berat</div>
+    <div class="eyebrow">Categories: Good · Minor · Moderate · Severe damage</div>
   </header>
 
   <div class="grid">
-    <aside class="panel sticky" aria-label="Input penilaian">
+    <aside class="panel sticky" aria-label="Assessment input">
       <div>
-        <h2>1. Foto rumah</h2>
-        <p class="muted" style="margin:4px 0 0;font-size:0.88rem">Fasad, atap, dinding, lantai, plafon, kamar mandi, dan titik yang dicurigai rusak (retak, rembes, lapuk).</p>
+        <h2>1. Home photos</h2>
+        <p class="muted" style="margin:4px 0 0;font-size:0.88rem">Exterior, roof, walls, floors, ceilings, bathrooms, and any areas with suspected damage (cracks, leaks, or rot).</p>
       </div>
       <button type="button" class="drop" id="drop">
-        <strong>Pilih atau seret foto ke sini</strong>
-        <span class="muted" id="dropHint" style="font-size:0.82rem">JPG, PNG, atau WebP</span>
+        <strong>Choose or drag photos here</strong>
+        <span class="muted" id="dropHint" style="font-size:0.82rem">JPG, PNG, or WebP</span>
       </button>
       <input type="file" id="file" accept="image/jpeg,image/png,image/webp" multiple hidden>
       <div class="photos" id="photos"></div>
 
       <div>
-        <h2>2. Data bangunan <span class="muted" style="font:400 0.8rem var(--f-body)">(opsional)</span></h2>
+        <h2>2. Building details <span class="muted" style="font:400 0.8rem var(--f-body)">(optional)</span></h2>
       </div>
       <div class="fields">
-        <label class="f">Tipe / luas bangunan
-          <input type="text" id="tipe" placeholder="mis. Tipe 45">
+        <label class="f">Building type / floor area
+          <input type="text" id="tipe" placeholder="e.g. 45 m²">
         </label>
-        <label class="f">Umur bangunan (tahun)
-          <input type="number" id="umur" min="0" max="150" placeholder="mis. 12">
+        <label class="f">Building age (years)
+          <input type="number" id="umur" min="0" max="150" placeholder="e.g. 12">
         </label>
-        <label class="f">Jumlah lantai
+        <label class="f">Number of floors
           <select id="lantai"><option value="">—</option><option>1</option><option>2</option><option>3+</option></select>
         </label>
-        <label class="f">Lokasi (kota)
-          <input type="text" id="kota" placeholder="mis. Bekasi">
+        <label class="f">City
+          <input type="text" id="kota" placeholder="e.g. Jakarta">
         </label>
       </div>
 
       <div id="aiNotice" class="notice" hidden></div>
       <div class="row">
-        <button type="button" class="btn" id="run" disabled>Nilai kondisi rumah</button>
+        <button type="button" class="btn" id="run" disabled>Assess home condition</button>
       </div>
-      <div class="row" id="stopRow" hidden><button type="button" class="btn ghost" id="stop">Hentikan</button></div>
-      <div class="status" id="status" role="status" aria-live="polite">Tambahkan minimal 1 foto.</div>
+      <div class="row" id="stopRow" hidden><button type="button" class="btn ghost" id="stop">Stop</button></div>
+      <div class="status" id="status" role="status" aria-live="polite">Add at least one photo.</div>
     </aside>
 
     <main id="report" class="report" aria-live="polite"></main>
@@ -192,42 +192,42 @@ td.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-s
 
 <script>
 (() => {
-  // ---------- Bobot & skala ----------
+  // ---------- Weights & scale ----------
   const KOMPONEN = [
-    { id: "struktur", kode: "K-01", nama: "Struktur (pondasi, kolom, balok)", bobot: 25 },
-    { id: "atap",     kode: "K-02", nama: "Atap & talang",                   bobot: 20 },
-    { id: "dinding",  kode: "K-03", nama: "Dinding",                         bobot: 15 },
-    { id: "lantai",   kode: "K-04", nama: "Lantai",                          bobot: 10 },
-    { id: "plafon",   kode: "K-05", nama: "Plafon",                          bobot: 10 },
-    { id: "kusen",    kode: "K-06", nama: "Pintu, jendela & kusen",          bobot: 8 },
-    { id: "utilitas", kode: "K-07", nama: "Utilitas (listrik, air, sanitasi)", bobot: 7 },
-    { id: "finishing",kode: "K-08", nama: "Finishing & cat",                 bobot: 5 },
+    { id: "struktur", kode: "K-01", nama: "Structure (foundation, columns, beams)", bobot: 25 },
+    { id: "atap",     kode: "K-02", nama: "Roof and gutters",                      bobot: 20 },
+    { id: "dinding",  kode: "K-03", nama: "Walls",                                  bobot: 15 },
+    { id: "lantai",   kode: "K-04", nama: "Flooring",                               bobot: 10 },
+    { id: "plafon",   kode: "K-05", nama: "Ceiling",                                bobot: 10 },
+    { id: "kusen",    kode: "K-06", nama: "Doors, windows, and frames",             bobot: 8 },
+    { id: "utilitas", kode: "K-07", nama: "Utilities (electrical, plumbing, sanitation)", bobot: 7 },
+    { id: "finishing",kode: "K-08", nama: "Finishes and paint",                     bobot: 5 },
   ];
-  // Skor 1–5 → persentase kerusakan komponen
+  // Score 1–5 → component damage percentage.
   const RUSAK = { 5: 0, 4: 10, 3: 30, 2: 55, 1: 85 };
   const URGENSI = {
-    segera:    { label: "Segera",        urut: 0 },
-    "3_bulan": { label: "≤ 3 bulan",     urut: 1 },
-    "12_bulan":{ label: "≤ 12 bulan",    urut: 2 },
-    pemantauan:{ label: "Pantau saja",   urut: 3 },
+    segera:    { label: "Immediate",       urut: 0 },
+    "3_bulan": { label: "Within 3 months", urut: 1 },
+    "12_bulan":{ label: "Within 12 months", urut: 2 },
+    pemantauan:{ label: "Monitor",         urut: 3 },
   };
-  const RUANG = ["Fasad depan", "Atap", "Ruang tamu", "Kamar tidur", "Dapur", "Kamar mandi", "Plafon", "Lantai", "Teras / carport", "Halaman / pagar", "Detail kerusakan", "Lainnya"];
+  const RUANG = ["Front exterior", "Roof", "Living room", "Bedroom", "Kitchen", "Bathroom", "Ceiling", "Floor", "Porch / carport", "Yard / fence", "Damage detail", "Other"];
 
   function kategori(pct) {
-    if (pct < 10) return { label: "Baik", cls: "s-ok" };
-    if (pct <= 30) return { label: "Rusak Ringan", cls: "s-mild" };
-    if (pct <= 45) return { label: "Rusak Sedang", cls: "s-mid" };
-    return { label: "Rusak Berat", cls: "s-severe" };
+    if (pct < 10) return { label: "Good", cls: "s-ok" };
+    if (pct <= 30) return { label: "Minor damage", cls: "s-mild" };
+    if (pct <= 45) return { label: "Moderate damage", cls: "s-mid" };
+    return { label: "Severe damage", cls: "s-severe" };
   }
   function statusSkor(s) {
-    if (s == null) return { label: "Tidak terlihat", cls: "s-na" };
-    if (s >= 5) return { label: "Sangat baik", cls: "s-ok" };
-    if (s === 4) return { label: "Baik", cls: "s-ok" };
-    if (s === 3) return { label: "Rusak ringan", cls: "s-mild" };
-    if (s === 2) return { label: "Rusak sedang", cls: "s-mid" };
-    return { label: "Rusak berat", cls: "s-severe" };
+    if (s == null) return { label: "Not visible", cls: "s-na" };
+    if (s >= 5) return { label: "Excellent", cls: "s-ok" };
+    if (s === 4) return { label: "Good", cls: "s-ok" };
+    if (s === 3) return { label: "Minor damage", cls: "s-mild" };
+    if (s === 2) return { label: "Moderate damage", cls: "s-mid" };
+    return { label: "Severe damage", cls: "s-severe" };
   }
-  // Rata-rata berbobot; komponen tak terlihat dikeluarkan dan bobot dinormalkan ulang
+  // Weighted average; exclude invisible components and renormalize the remaining weights.
   function hitung(rep) {
     let w = 0, d = 0, min = 0, max = 0;
     for (const k of KOMPONEN) {
@@ -241,26 +241,26 @@ td.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-s
     return { rusak, kondisi: rusak == null ? null : Math.round(100 - rusak), cakupan: w, min, max };
   }
 
-  const rp = (n) => "Rp" + new Intl.NumberFormat("id-ID").format(Math.round(n));
+  const rp = (n) => "IDR " + new Intl.NumberFormat("en-US").format(Math.round(n));
   const rpRange = (a, b) => (!a && !b) ? "—" : a === b ? rp(a) : `${rp(a)} – ${rp(b)}`;
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-  // ---------- Contoh laporan (ditandai sebagai contoh) ----------
+  // ---------- Example report (marked as illustrative) ----------
   const CONTOH = {
-    ringkasan: "Rumah satu lantai tipe 45 umur ±12 tahun dalam kondisi cukup terawat. Masalah utama ada pada rembesan air di plafon kamar mandi dan retak rambut di dinding fasad. Struktur yang terlihat tidak menunjukkan tanda penurunan.",
+    ringkasan: "This 12-year-old, single-story 45 m² home appears reasonably maintained. The main concerns are water stains on the bathroom ceiling and hairline cracks in the exterior wall. No signs of settlement are visible in the inspected structure.",
     komponen: {
-      struktur: { skor: 4, temuan: ["Kolom praktis teras lurus, tidak ada retak diagonal", "Tidak terlihat tanda penurunan pondasi pada sudut bangunan"], rekomendasi: "Tidak perlu tindakan; periksa ulang sudut bangunan setiap musim hujan.", urgensi: "pemantauan", biaya_min: 0, biaya_max: 0, foto: [1] },
-      atap: { skor: 3, temuan: ["Beberapa genteng bergeser di sisi kiri", "Talang depan berkarat dan melendut"], rekomendasi: "Rapikan genteng bergeser dan ganti talang seng dengan PVC.", urgensi: "3_bulan", biaya_min: 1500000, biaya_max: 3000000, foto: [2] },
-      dinding: { skor: 3, temuan: ["Retak rambut vertikal di dinding fasad dekat jendela", "Cat mengelupas pada bagian bawah dinding (indikasi rembesan kapiler)"], rekomendasi: "Isi retak dengan acian/filler, pasang lapisan waterproofing di bagian bawah dinding.", urgensi: "12_bulan", biaya_min: 1000000, biaya_max: 2500000, foto: [1] },
-      lantai: { skor: 4, temuan: ["Keramik rata, satu keramik retak di ruang tamu"], rekomendasi: "Ganti keramik yang retak.", urgensi: "pemantauan", biaya_min: 150000, biaya_max: 400000, foto: [3] },
-      plafon: { skor: 2, temuan: ["Noda air melebar di plafon kamar mandi", "Gypsum mulai melendut di satu panel"], rekomendasi: "Cari sumber bocor (pipa atau atap), ganti panel gypsum yang rusak.", urgensi: "segera", biaya_min: 800000, biaya_max: 2000000, foto: [4] },
-      kusen: { skor: 4, temuan: ["Kusen kayu jendela depan sedikit lapuk di bagian bawah"], rekomendasi: "Amplas dan cat ulang kusen; tambal bagian lapuk.", urgensi: "12_bulan", biaya_min: 300000, biaya_max: 800000, foto: [1] },
-      utilitas: { skor: null, temuan: ["Panel listrik dan instalasi air tidak tampak di foto"], rekomendasi: "Tambahkan foto panel MCB dan saluran air untuk dinilai.", urgensi: "pemantauan", biaya_min: 0, biaya_max: 0, foto: [] },
-      finishing: { skor: 3, temuan: ["Cat eksterior pudar", "Noda jamur di sudut kamar mandi"], rekomendasi: "Cat ulang eksterior dengan cat tahan cuaca setelah perbaikan dinding.", urgensi: "12_bulan", biaya_min: 2500000, biaya_max: 4500000, foto: [1, 4] },
+      struktur: { skor: 4, temuan: ["Porch columns appear straight, with no diagonal cracks", "No visible signs of foundation settlement at the building corners"], rekomendasi: "No action needed; recheck the building corners each rainy season.", urgensi: "pemantauan", biaya_min: 0, biaya_max: 0, foto: [1] },
+      atap: { skor: 3, temuan: ["Several roof tiles appear displaced on the left side", "The front gutter is rusted and sagging"], rekomendasi: "Reposition the displaced tiles and replace the metal gutter with PVC.", urgensi: "3_bulan", biaya_min: 1500000, biaya_max: 3000000, foto: [2] },
+      dinding: { skor: 3, temuan: ["Vertical hairline crack in the exterior wall near a window", "Paint is peeling along the bottom of the wall (possible rising damp)"], rekomendasi: "Fill the crack and apply waterproofing to the lower wall.", urgensi: "12_bulan", biaya_min: 1000000, biaya_max: 2500000, foto: [1] },
+      lantai: { skor: 4, temuan: ["Floor appears level; one living-room tile is cracked"], rekomendasi: "Replace the cracked tile.", urgensi: "pemantauan", biaya_min: 150000, biaya_max: 400000, foto: [3] },
+      plafon: { skor: 2, temuan: ["Water stain is spreading on the bathroom ceiling", "One gypsum panel is beginning to sag"], rekomendasi: "Find the source of the leak (pipe or roof) and replace the damaged gypsum panel.", urgensi: "segera", biaya_min: 800000, biaya_max: 2000000, foto: [4] },
+      kusen: { skor: 4, temuan: ["The lower part of the front wooden window frame appears slightly rotten"], rekomendasi: "Sand and repaint the frame; patch the rotten section.", urgensi: "12_bulan", biaya_min: 300000, biaya_max: 800000, foto: [1] },
+      utilitas: { skor: null, temuan: ["The electrical panel and plumbing are not visible in the photos"], rekomendasi: "Add photos of the electrical panel and plumbing for assessment.", urgensi: "pemantauan", biaya_min: 0, biaya_max: 0, foto: [] },
+      finishing: { skor: 3, temuan: ["Exterior paint has faded", "Mold stain in the bathroom corner"], rekomendasi: "Repaint the exterior with weather-resistant paint after repairing the wall.", urgensi: "12_bulan", biaya_min: 2500000, biaya_max: 4500000, foto: [1, 4] },
     },
-    risiko_keselamatan: ["Panel gypsum plafon kamar mandi yang melendut berisiko jatuh bila terus terkena air."],
-    kualitas_foto: "Cukup jelas; foto atap diambil dari bawah sehingga kondisi rangka atap tidak terlihat.",
-    foto_disarankan: ["Panel listrik (MCB)", "Rangka atap dari lubang plafon", "Saluran pembuangan kamar mandi"],
+    risiko_keselamatan: ["The sagging bathroom ceiling panel could fall if it continues to be exposed to water."],
+    kualitas_foto: "Generally clear; the roof was photographed from below, so the roof structure is not visible.",
+    foto_disarankan: ["Electrical panel", "Roof structure from a ceiling access hatch", "Bathroom drain"],
   };
 
   // ---------- State ----------
@@ -268,7 +268,7 @@ td.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-s
   let sample = null, maxCount = 0, ctl = null;
   const $ = (id) => document.getElementById(id);
 
-  // ---------- Foto ----------
+  // ---------- Photos ----------
   function addFiles(list) {
     const ok = ["image/jpeg", "image/png", "image/webp"];
     let skipped = 0;
@@ -278,15 +278,15 @@ td.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-s
       state.photos.push({ file: f, url: URL.createObjectURL(f), label: RUANG[Math.min(state.photos.length, RUANG.length - 1)] });
     }
     renderPhotos();
-    if (skipped) setStatus(`${skipped} file dilewati (format tidak didukung atau melebihi batas ${maxCount || "?"} foto).`);
+    if (skipped) setStatus(`${skipped} file(s) skipped (unsupported format or over the ${maxCount || "?"}-photo limit).`, true);
   }
   function renderPhotos() {
     const el = $("photos");
     el.innerHTML = state.photos.map((p, i) => `
       <div class="photo">
-        <div class="img"><img src="${p.url}" alt="Foto ${i + 1}: ${esc(p.label)}"><span class="num">F${i + 1}</span>
-          <button type="button" class="rm" data-rm="${i}" aria-label="Hapus foto ${i + 1}">×</button></div>
-        <select id="lbl-${i}" data-lbl="${i}" aria-label="Bagian rumah pada foto ${i + 1}">
+        <div class="img"><img src="${p.url}" alt="Photo ${i + 1}: ${esc(p.label)}"><span class="num">F${i + 1}</span>
+          <button type="button" class="rm" data-rm="${i}" aria-label="Remove photo ${i + 1}">×</button></div>
+        <select id="lbl-${i}" data-lbl="${i}" aria-label="Area of the home shown in photo ${i + 1}">
           ${RUANG.map((r) => `<option${r === p.label ? " selected" : ""}>${r}</option>`).join("")}
         </select>
       </div>`).join("");
@@ -314,42 +314,42 @@ td.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-s
   function updateRun() {
     const can = !!sample && maxCount > 0 && state.photos.length > 0 && !state.busy;
     $("run").disabled = !can;
-    if (!state.busy && sample && maxCount) setStatus(state.photos.length ? `${state.photos.length} dari maks. ${maxCount} foto siap dinilai.` : "Tambahkan minimal 1 foto.");
+    if (!state.busy && sample && maxCount) setStatus(state.photos.length ? `${state.photos.length} of ${maxCount} maximum photos ready for assessment.` : "Add at least one photo.");
   }
 
   // ---------- Prompt ----------
   function buildPrompt() {
     const info = [
-      $("tipe").value && `Tipe/luas: ${$("tipe").value}`,
-      $("umur").value && `Umur bangunan: ${$("umur").value} tahun`,
-      $("lantai").value && `Jumlah lantai: ${$("lantai").value}`,
-      $("kota").value && `Lokasi: ${$("kota").value}`,
-    ].filter(Boolean).join("\n") || "Tidak diisi.";
-    const daftarFoto = state.photos.map((p, i) => `F${i + 1}: ${p.label}`).join("\n");
-    return `Anda adalah inspektur bangunan rumah tinggal di Indonesia. Nilai kondisi rumah HANYA dari yang benar-benar terlihat di foto terlampir. Jangan menebak komponen yang tidak tampak.
+      $("tipe").value && `Building type / floor area: ${$("tipe").value}`,
+      $("umur").value && `Building age: ${$("umur").value} years`,
+      $("lantai").value && `Number of floors: ${$("lantai").value}`,
+      $("kota").value && `Location: ${$("kota").value}`,
+    ].filter(Boolean).join("\n") || "Not provided.";
+    const daftarFoto = state.photos.map((p, i) => `Photo ${i + 1}: ${p.label}`).join("\n");
+    return `You are a residential building inspector in Indonesia. Assess the home's condition ONLY from details that are actually visible in the attached photos. Do not guess about components that cannot be seen.
 
-Data bangunan:
+Building information:
 ${info}
 
-Urutan foto terlampir (label dari pengguna):
+Attached photo order (user-provided labels):
 ${daftarFoto}
 
-Komponen yang dinilai (gunakan id persis ini): ${KOMPONEN.map((k) => `${k.id} = ${k.nama}`).join("; ")}.
+Components to assess (use these exact IDs): ${KOMPONEN.map((k) => `${k.id} = ${k.nama}`).join("; ")}.
 
-Skala skor per komponen:
-5 = sangat baik, tanpa cacat
-4 = baik, hanya cacat kosmetik kecil
-3 = rusak ringan (retak rambut, cat mengelupas, noda air kecil, genteng bergeser)
-2 = rusak sedang (rembesan aktif, plafon melendut, retak lebar >1 mm, kayu lapuk)
-1 = rusak berat / membahayakan (retak struktural diagonal, kolom/balok rusak, atap runtuh sebagian)
-null = komponen tidak terlihat di foto mana pun.
+Score each component from 1 to 5:
+5 = excellent, no defects
+4 = good, minor cosmetic defects only
+3 = minor damage (hairline cracks, peeling paint, small water stains, displaced roof tiles)
+2 = moderate damage (active leaks, sagging ceiling, cracks wider than 1 mm, rotten wood)
+1 = severe or hazardous damage (structural diagonal cracks, damaged columns or beams, partial roof collapse)
+null = component is not visible in any photo.
 
-Biaya: kisaran biaya perbaikan dalam Rupiah (bilangan bulat) dengan harga material dan upah wajar di Indonesia tahun 2026${$("kota").value ? " untuk " + $("kota").value : ""}. 0 jika tidak perlu tindakan.
-Urgensi: salah satu "segera", "3_bulan", "12_bulan", "pemantauan".
+Costs: estimate repair costs in Indonesian rupiah using reasonable local material and labor prices for 2026${$("kota").value ? " in " + $("kota").value : ""}. Use 0 if no action is needed.
+Urgency: one of "segera", "3_bulan", "12_bulan", "pemantauan".
 
-Balas HANYA dengan satu objek JSON berbahasa Indonesia, bentuknya:
-{"ringkasan": "2-3 kalimat", "komponen": {"<id>": {"skor": 1-5 atau null, "temuan": ["..."], "rekomendasi": "...", "urgensi": "...", "biaya_min": 0, "biaya_max": 0, "foto": [nomor foto, mis. 1]}}, "risiko_keselamatan": ["..."], "kualitas_foto": "1 kalimat", "foto_disarankan": ["bagian yang perlu difoto tambahan"]}
-Sertakan kedelapan id komponen. Jika foto tidak menampilkan rumah sama sekali, isi semua skor null dan jelaskan di "ringkasan".`;
+Return ONLY one JSON object in English, with this shape:
+{"ringkasan": "2-3 sentences", "komponen": {"<id>": {"skor": 1-5 or null, "temuan": ["..."], "rekomendasi": "...", "urgensi": "...", "biaya_min": 0, "biaya_max": 0, "foto": [photo number, e.g. 1]}}, "risiko_keselamatan": ["..."], "kualitas_foto": "one sentence", "foto_disarankan": ["area needing additional photos"]}
+Include all eight component IDs. If the photos do not show a home, set all scores to null and explain this in "ringkasan".`;
   }
 
   function normalisasi(raw) {
@@ -374,16 +374,16 @@ Sertakan kedelapan id komponen. Jika foto tidak menampilkan rumah sama sekali, i
   }
 
   const PESAN = {
-    not_granted: "Akses AI tidak diizinkan untuk halaman ini.",
-    sampling_disabled: "AI tidak tersedia untuk akun ini.",
-    rate_limited: "Terlalu banyak permintaan atau batas pemakaian tercapai. Coba lagi beberapa saat lagi.",
-    session_expired: "Sesi berakhir. Masuk kembali ke Claude, lalu coba lagi.",
-    image_rejected: "Salah satu foto ditolak (format, ukuran, atau jumlah). Ganti foto tersebut.",
-    images_unavailable: "Tampilan ini tidak dapat mengirim foto ke AI.",
-    refused: "AI menolak memproses foto ini. Gunakan foto rumah yang lain.",
-    invalid_json: "Jawaban AI tidak terbaca. Klik Nilai kondisi rumah sekali lagi.",
-    empty_completion: "AI tidak memberi jawaban. Coba dengan lebih sedikit foto.",
-    prompt_too_large: "Permintaan terlalu besar. Kurangi jumlah foto.",
+    not_granted: "AI access is not allowed for this page.",
+    sampling_disabled: "AI is unavailable for this account.",
+    rate_limited: "Too many requests or usage limit reached. Please try again shortly.",
+    session_expired: "Session expired. Sign in to Claude again, then retry.",
+    image_rejected: "A photo was rejected (format, size, or count). Replace that photo.",
+    images_unavailable: "This view cannot send photos to AI.",
+    refused: "AI refused to process these photos. Try different home photos.",
+    invalid_json: "The AI response could not be read. Click Assess home condition again.",
+    empty_completion: "AI returned no response. Try using fewer photos.",
+    prompt_too_large: "The request is too large. Reduce the number of photos.",
   };
 
   async function run() {
@@ -391,24 +391,24 @@ Sertakan kedelapan id komponen. Jika foto tidak menampilkan rumah sama sekali, i
     state.busy = true; updateRun();
     ctl = new AbortController();
     $("stopRow").hidden = false;
-    setStatus("Memeriksa foto… biasanya 20–60 detik.");
+    setStatus("Assessing photos… this usually takes 20–60 seconds.");
     try {
       const raw = await sample.json(buildPrompt(), {
         images: state.photos.map((p) => p.file),
         modelTier: "default",
         signal: ctl.signal,
-        onText: ({ text }) => setStatus(`Menyusun laporan… ${text.length} karakter diterima`),
+        onText: ({ text }) => setStatus(`Generating report… ${text.length} characters received`),
       });
       state.report = normalisasi(raw);
       state.isExample = false;
       renderReport();
-      setStatus("Penilaian selesai.");
+      setStatus("Assessment complete.");
       $("report").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
     } catch (e) {
-      if (e?.code === "cancelled") setStatus("Penilaian dihentikan.");
-      else if (e?.message === "bentuk") setStatus("Jawaban AI tidak lengkap. Coba sekali lagi.", true);
-      else setStatus(PESAN[e?.code] || "Koneksi ke AI terputus. Coba lagi.", true);
-      if (["not_granted", "sampling_disabled", "images_unavailable", "not_declared", "capability_disabled"].includes(e?.code)) { sample = null; showAiNotice(PESAN[e.code] || "AI tidak tersedia di tampilan ini."); }
+      if (e?.code === "cancelled") setStatus("Assessment stopped.");
+      else if (e?.message === "bentuk") setStatus("The AI response is incomplete. Please try again.", true);
+      else setStatus(PESAN[e?.code] || "Connection to AI was lost. Please try again.", true);
+      if (["not_granted", "sampling_disabled", "images_unavailable", "not_declared", "capability_disabled"].includes(e?.code)) { sample = null; showAiNotice(PESAN[e.code] || "AI is unavailable in this view."); }
     } finally {
       state.busy = false; $("stopRow").hidden = true; ctl = null;
       $("run").disabled = !(sample && state.photos.length);
@@ -417,20 +417,20 @@ Sertakan kedelapan id komponen. Jika foto tidak menampilkan rumah sama sekali, i
   $("run").addEventListener("click", run);
   $("stop").addEventListener("click", () => ctl?.abort());
 
-  // ---------- Render laporan ----------
+  // ---------- Render report ----------
   function meter(s, cls) {
-    return `<span class="meter ${cls}" aria-label="Skor ${s ?? "tidak ada"} dari 5">${[1, 2, 3, 4, 5].map((i) => `<i class="${s != null && i <= s ? "on" : ""}"></i>`).join("")}</span>`;
+    return `<span class="meter ${cls}" aria-label="Score ${s ?? "none"} out of 5">${[1, 2, 3, 4, 5].map((i) => `<i class="${s != null && i <= s ? "on" : ""}"></i>`).join("")}</span>`;
   }
   function dial(val, cls) {
     const r = 62, c = 2 * Math.PI * r, off = val == null ? c : c * (1 - val / 100);
     return `<div class="dial ${cls}"><svg viewBox="0 0 148 148" aria-hidden="true">
       <circle cx="74" cy="74" r="${r}" fill="none" stroke="var(--rule)" stroke-width="10"/>
       <circle class="arc" cx="74" cy="74" r="${r}" fill="none" stroke="currentColor" stroke-width="10" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 74 74)"/>
-    </svg><div class="val"><b style="color:var(--ink)">${val ?? "–"}</b><span>INDEKS KONDISI / 100</span></div></div>`;
+    </svg><div class="val"><b style="color:var(--ink)">${val ?? "–"}</b><span>CONDITION INDEX / 100</span></div></div>`;
   }
   function renderReport() {
     const rep = state.report, h = hitung(rep);
-    const kat = h.rusak == null ? { label: "Belum dapat dinilai", cls: "s-na" } : kategori(h.rusak);
+    const kat = h.rusak == null ? { label: "Not assessable", cls: "s-na" } : kategori(h.rusak);
     const fotoRef = (arr) => arr.length ? arr.map((n) => "F" + n).join(", ") : "";
     const komps = KOMPONEN.map((k) => {
       const c = rep.komponen[k.id], st = statusSkor(c.skor);
@@ -440,8 +440,8 @@ Sertakan kedelapan id komponen. Jika foto tidak menampilkan rumah sama sekali, i
           <div class="comp-top"><h3>${esc(k.nama)}</h3>
             <span class="row">${meter(c.skor, st.cls)}<span class="chip ${st.cls}">${st.label}</span></span></div>
           ${c.temuan.length ? `<ul>${c.temuan.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
-          ${c.rekomendasi ? `<div class="rec"><strong>Rekomendasi:</strong> ${esc(c.rekomendasi)}</div>` : ""}
-          <div class="meta"><span>Urgensi: <b>${URGENSI[c.urgensi].label}</b></span><span class="mono">${rpRange(c.biaya_min, c.biaya_max)}</span>${c.foto.length ? `<span>Foto: ${fotoRef(c.foto)}</span>` : ""}</div>
+          ${c.rekomendasi ? `<div class="rec"><strong>Recommendation:</strong> ${esc(c.rekomendasi)}</div>` : ""}
+          <div class="meta"><span>Urgency: <b>${URGENSI[c.urgensi].label}</b></span><span class="mono">${rpRange(c.biaya_min, c.biaya_max)}</span>${c.foto.length ? `<span>Photos: ${fotoRef(c.foto)}</span>` : ""}</div>
         </div></div>`;
     }).join("");
     const aksi = KOMPONEN.map((k) => ({ k, c: rep.komponen[k.id] }))
@@ -450,61 +450,61 @@ Sertakan kedelapan id komponen. Jika foto tidak menampilkan rumah sama sekali, i
     const tidakTerlihat = KOMPONEN.filter((k) => rep.komponen[k.id].skor == null).map((k) => k.nama);
 
     $("report").innerHTML = `
-      ${state.isExample ? `<div class="example-banner"><strong>Contoh laporan.</strong> Ini hasil ilustrasi untuk rumah fiktif. Unggah foto Anda sendiri untuk penilaian nyata.</div>` : ""}
+      ${state.isExample ? `<div class="example-banner"><strong>Example report.</strong> This is an illustrative result for a fictional home. Upload your own photos for an actual assessment.</div>` : ""}
       <div class="rep-head">
         <div style="color:var(--${kat.cls === "s-ok" ? "ok" : kat.cls === "s-mild" ? "mild" : kat.cls === "s-mid" ? "mid" : kat.cls === "s-severe" ? "severe" : "ink-2"})">${dial(h.kondisi, kat.cls)}</div>
         <div style="min-width:0">
-          <div class="row"><span class="eyebrow">Hasil penilaian</span><span class="chip ${kat.cls}">${kat.label}</span></div>
+          <div class="row"><span class="eyebrow">Assessment result</span><span class="chip ${kat.cls}">${kat.label}</span></div>
           <p class="summary">${esc(rep.ringkasan)}</p>
           <div class="kpis">
-            <div class="kpi"><span class="eyebrow">Tingkat kerusakan</span><b>${h.rusak == null ? "—" : h.rusak.toFixed(1).replace(".", ",") + "%"}</b></div>
-            <div class="kpi"><span class="eyebrow">Estimasi biaya</span><b>${rpRange(h.min, h.max)}</b></div>
-            <div class="kpi"><span class="eyebrow">Cakupan penilaian</span><b>${h.cakupan}% bobot</b></div>
+            <div class="kpi"><span class="eyebrow">Damage level</span><b>${h.rusak == null ? "—" : h.rusak.toFixed(1) + "%"}</b></div>
+            <div class="kpi"><span class="eyebrow">Estimated cost</span><b>${rpRange(h.min, h.max)}</b></div>
+            <div class="kpi"><span class="eyebrow">Assessment coverage</span><b>${h.cakupan}% of weight</b></div>
           </div>
         </div>
       </div>
-      ${rep.risiko_keselamatan.length ? `<div class="section"><div class="risk"><strong>Perhatian keselamatan</strong><ul>${rep.risiko_keselamatan.map((r) => `<li>${esc(r)}</li>`).join("")}</ul></div></div>` : ""}
+      ${rep.risiko_keselamatan.length ? `<div class="section"><div class="risk"><strong>Safety considerations</strong><ul>${rep.risiko_keselamatan.map((r) => `<li>${esc(r)}</li>`).join("")}</ul></div></div>` : ""}
       <div class="section">
-        <div class="row" style="justify-content:space-between"><h2>Prioritas perbaikan</h2>
-          <button type="button" class="btn ghost" id="copy">Salin ringkasan</button></div>
+        <div class="row" style="justify-content:space-between"><h2>Repair priorities</h2>
+          <button type="button" class="btn ghost" id="copy">Copy summary</button></div>
         ${aksi.length ? `<div class="tablewrap"><table>
-          <thead><tr><th>Urgensi</th><th>Komponen</th><th>Tindakan</th><th>Biaya</th></tr></thead>
+          <thead><tr><th>Urgency</th><th>Component</th><th>Action</th><th>Cost</th></tr></thead>
           <tbody>${aksi.map(({ k, c }) => `<tr><td><span class="chip ${statusSkor(c.skor).cls}">${URGENSI[c.urgensi].label}</span></td><td>${esc(k.nama)}</td><td>${esc(c.rekomendasi)}</td><td class="num">${rpRange(c.biaya_min, c.biaya_max)}</td></tr>`).join("")}</tbody>
-        </table></div>` : `<p class="muted" style="margin:0">Tidak ada perbaikan yang perlu diprioritaskan dari foto ini.</p>`}
+        </table></div>` : `<p class="muted" style="margin:0">No repairs need to be prioritized based on these photos.</p>`}
       </div>
       <div class="section">
-        <h2>Rincian per komponen</h2>
+        <h2>Component details</h2>
         <div>${komps}</div>
       </div>
       <div class="section">
         <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px">
-          <div><h3>Skala skor</h3><div class="scale" style="margin-top:8px">
-            <div><span class="mono">5</span> Sangat baik, tanpa cacat</div>
-            <div><span class="mono">4</span> Baik, cacat kosmetik</div>
-            <div><span class="mono">3</span> Rusak ringan</div>
-            <div><span class="mono">2</span> Rusak sedang</div>
-            <div><span class="mono">1</span> Rusak berat / berbahaya</div></div>
-            <p class="foot" style="margin:8px 0 0">Kategori bangunan: &lt;10% Baik · ≤30% Rusak Ringan · ≤45% Rusak Sedang · &gt;45% Rusak Berat (mengacu batas tingkat kerusakan bangunan gedung PUPR).</p></div>
-          <div><h3>Kualitas foto</h3><p style="margin:8px 0 0">${esc(rep.kualitas_foto) || "—"}</p>
-            ${tidakTerlihat.length ? `<p class="foot" style="margin:8px 0 0">Tidak terlihat, dikeluarkan dari indeks: ${tidakTerlihat.map(esc).join(", ")}.</p>` : ""}</div>
-          <div><h3>Foto tambahan yang disarankan</h3>${rep.foto_disarankan.length ? `<ul style="margin:8px 0 0;padding-left:1.1em">${rep.foto_disarankan.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>` : `<p class="muted" style="margin:8px 0 0">Tidak ada.</p>`}</div>
+          <div><h3>Score scale</h3><div class="scale" style="margin-top:8px">
+            <div><span class="mono">5</span> Excellent, no defects</div>
+            <div><span class="mono">4</span> Good, cosmetic defects</div>
+            <div><span class="mono">3</span> Minor damage</div>
+            <div><span class="mono">2</span> Moderate damage</div>
+            <div><span class="mono">1</span> Severe / hazardous damage</div></div>
+            <p class="foot" style="margin:8px 0 0">Building categories: &lt;10% Good · ≤30% Minor damage · ≤45% Moderate damage · &gt;45% Severe damage (based on PUPR building-damage thresholds).</p></div>
+          <div><h3>Photo quality</h3><p style="margin:8px 0 0">${esc(rep.kualitas_foto) || "—"}</p>
+            ${tidakTerlihat.length ? `<p class="foot" style="margin:8px 0 0">Not visible and excluded from the index: ${tidakTerlihat.map(esc).join(", ")}.</p>` : ""}</div>
+          <div><h3>Additional photos recommended</h3>${rep.foto_disarankan.length ? `<ul style="margin:8px 0 0;padding-left:1.1em">${rep.foto_disarankan.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>` : `<p class="muted" style="margin:8px 0 0">None.</p>`}</div>
         </div>
-        <p class="foot" style="margin:0">Penilaian visual AI dari foto, bukan pengganti inspeksi langsung oleh ahli bangunan bersertifikat. Kerusakan tersembunyi (rayap, pipa dalam dinding, pondasi) tidak dapat dideteksi dari foto.</p>
+        <p class="foot" style="margin:0">AI-assisted visual assessment from photos; not a substitute for an in-person inspection by a qualified building professional. Hidden damage (termites, pipes inside walls, or foundations) cannot be detected from photos.</p>
       </div>`;
 
     $("copy").addEventListener("click", async (e) => {
       const lines = [
-        `PENILAIAN KONDISI RUMAH${state.isExample ? " (CONTOH)" : ""}`,
-        `Indeks kondisi: ${h.kondisi ?? "-"}/100 — ${kat.label}`,
-        `Tingkat kerusakan: ${h.rusak == null ? "-" : h.rusak.toFixed(1) + "%"}`,
-        `Estimasi biaya: ${rpRange(h.min, h.max)}`,
+        `HOME CONDITION ASSESSMENT${state.isExample ? " (EXAMPLE)" : ""}`,
+        `Condition index: ${h.kondisi ?? "-"}/100 — ${kat.label}`,
+        `Damage level: ${h.rusak == null ? "-" : h.rusak.toFixed(1) + "%"}`,
+        `Estimated cost: ${rpRange(h.min, h.max)}`,
         "", rep.ringkasan, "",
-        ...KOMPONEN.map((k) => { const c = rep.komponen[k.id]; return `- ${k.nama}: ${c.skor ?? "tidak terlihat"}/5 (${statusSkor(c.skor).label}) — ${c.rekomendasi}`; }),
+        ...KOMPONEN.map((k) => { const c = rep.komponen[k.id]; return `- ${k.nama}: ${c.skor ?? "not visible"}/5 (${statusSkor(c.skor).label}) — ${c.rekomendasi}`; }),
       ];
       const txt = lines.join("\n");
-      try { await navigator.clipboard.writeText(txt); e.target.textContent = "Tersalin"; }
-      catch { e.target.textContent = "Gagal menyalin"; }
-      setTimeout(() => { e.target.textContent = "Salin ringkasan"; }, 1800);
+      try { await navigator.clipboard.writeText(txt); e.target.textContent = "Copied"; }
+      catch { e.target.textContent = "Failed to copy"; }
+      setTimeout(() => { e.target.textContent = "Copy summary"; }, 1800);
     });
   }
 
@@ -513,16 +513,16 @@ Sertakan kedelapan id komponen. Jika foto tidak menampilkan rumah sama sekali, i
   // ---------- Boot ----------
   renderReport();
   renderPhotos();
-  setStatus("Menghubungkan ke AI…");
+  setStatus("Connecting to AI…");
   (async () => {
-    if (!window.claude?.use) { showAiNotice("Buka halaman ini di Claude untuk menjalankan penilaian AI."); setStatus(""); return; }
+    if (!window.claude?.use) { showAiNotice("Open this page in Claude to run an AI assessment."); setStatus(""); return; }
     sample = await window.claude.use("sample");
-    if (!sample) { showAiNotice("AI tidak tersedia di tampilan ini. Contoh laporan tetap bisa dilihat."); setStatus(""); return; }
+    if (!sample) { showAiNotice("AI is unavailable in this view. The example report is still available."); setStatus(""); return; }
     const lim = await sample.limits().catch(() => null);
-    if (!lim?.images) { sample = null; showAiNotice("Tampilan ini tidak dapat mengirim foto ke AI."); setStatus(""); return; }
+    if (!lim?.images) { sample = null; showAiNotice("This view cannot send photos to AI."); setStatus(""); return; }
     maxCount = lim.images.maxCount;
     file.accept = lim.images.mediaTypes.filter((t) => t !== "image/gif").join(",") || file.accept;
-    $("dropHint").textContent = `JPG, PNG, atau WebP · maks. ${maxCount} foto`;
+    $("dropHint").textContent = `JPG, PNG, or WebP · max ${maxCount} photos`;
     updateRun();
   })();
 })();
