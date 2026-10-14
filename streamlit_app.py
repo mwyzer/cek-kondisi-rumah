@@ -12,6 +12,7 @@ from typing import Any
 
 import streamlit as st
 from anthropic import Anthropic, AnthropicError
+from streamlit.errors import StreamlitSecretNotFoundError
 
 ROOT = Path(__file__).resolve().parent
 ANALYZER_DIR = ROOT / "analyzer"
@@ -302,6 +303,16 @@ def _format_idr(value: int) -> str:
     return f"IDR {value:,.0f}"
 
 
+def _setting(name: str, default: str = "") -> str:
+    value = os.getenv(name)
+    if value:
+        return value
+    try:
+        return str(st.secrets.get(name, default))
+    except StreamlitSecretNotFoundError:
+        return default
+
+
 def _input_signature(photos: list[Any], labels: list[str], info: dict[str, str], model: str) -> str:
     digest = hashlib.sha256()
     for photo, label in zip(photos, labels):
@@ -405,18 +416,9 @@ def main() -> None:
         "Computer-vision findings are heuristic indicators and may be inaccurate."
     )
 
-    with st.sidebar:
-        st.header("AI configuration")
-        api_key = os.getenv("ANTHROPIC_API_KEY", "")
-        if not api_key and (ROOT / ".streamlit" / "secrets.toml").exists():
-            api_key = str(st.secrets.get("ANTHROPIC_API_KEY", ""))
-        if not api_key:
-            api_key = st.text_input("Anthropic API key", type="password")
-        model = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-5-20250929")
-        if (ROOT / ".streamlit" / "secrets.toml").exists():
-            model = str(st.secrets.get("ANTHROPIC_MODEL", model))
-        model = st.text_input("Model", value=model)
-        st.caption("Your API key is used only to request the assessment.")
+    api_key = _setting("ANTHROPIC_API_KEY")
+    model = _setting("ANTHROPIC_MODEL", "claude-sonnet-4-5-20250929")
+    base_url = _setting("ANTHROPIC_BASE_URL")
 
     st.subheader("1. Home photos")
     uploads = st.file_uploader(
@@ -461,9 +463,9 @@ def main() -> None:
     too_large = [index + 1 for index, photo in enumerate(uploads) if photo.size > MAX_PHOTO_BYTES]
     if too_large:
         st.error("Photos exceeding 5 MB: " + ", ".join(str(index) for index in too_large))
-    disabled = not uploads or bool(too_large) or not api_key.strip() or not model.strip()
+    disabled = not uploads or bool(too_large) or not api_key.strip()
     if not api_key.strip():
-        st.warning("Enter an Anthropic API key in the sidebar to enable assessment.")
+        st.warning("Assessment is unavailable. Configure ANTHROPIC_API_KEY in the app environment or Streamlit Secrets.")
     signature = _input_signature(uploads, labels, info, model.strip()) if uploads else ""
     if st.session_state.get("assessment_signature") != signature:
         st.session_state.pop("assessment_result", None)
@@ -472,9 +474,6 @@ def main() -> None:
     if st.button("Assess home condition", type="primary", disabled=disabled):
         try:
             with st.spinner("Analyzing photos and generating the report..."):
-                base_url = os.getenv("ANTHROPIC_BASE_URL", "")
-                if (ROOT / ".streamlit" / "secrets.toml").exists():
-                    base_url = str(st.secrets.get("ANTHROPIC_BASE_URL", base_url))
                 client = Anthropic(api_key=api_key.strip(), base_url=base_url or None)
                 result = _assess_photos(uploads, labels, info, client, model.strip())
                 st.session_state["assessment_result"] = result

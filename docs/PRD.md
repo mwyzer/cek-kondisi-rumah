@@ -57,7 +57,7 @@ Homeowners may have difficulty organizing visible maintenance issues, understand
 
 ### Streamlit demo
 
-1. The user supplies an Anthropic API key and uploads up to 10 photos (JPG, PNG, or WebP; up to 5 MB each).
+1. The user uploads up to 10 photos (JPG, PNG, or WebP; up to 5 MB each). Anthropic credentials and model settings are preconfigured in the deployment environment or Streamlit Secrets; the interface does not expose AI configuration.
 2. The user labels each photo and may enter building details.
 3. The app runs the shared OpenCV analyzer and requests a structured report from the configured Anthropic model.
 4. The app calculates the condition index and category, then displays findings and indicative repair-cost ranges.

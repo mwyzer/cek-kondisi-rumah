@@ -10,7 +10,7 @@ The application interface, new AI-generated report text, service messages, and p
 
 The repository also includes a simplified Streamlit app for photo-based assessments. It reuses the Python/OpenCV analyzer and provides an AI-generated report, condition index, repair-cost estimates, and a JSON download. Reports are held in the current Streamlit session; the demo does not include persistent history, dataset-labeling tools, or 3D scanning.
 
-The demo accepts up to 10 JPG, PNG, or WebP photos, with a 5 MB limit per photo. It uses Anthropic directly; unlike the full web app, it does not use Vercel AI Gateway. The key can be entered in the sidebar or configured as `ANTHROPIC_API_KEY`. Optional `ANTHROPIC_MODEL` and `ANTHROPIC_BASE_URL` settings can be provided as environment variables or Streamlit secrets.
+The demo accepts up to 10 JPG, PNG, or WebP photos, with a 5 MB limit per photo. It uses Anthropic directly; unlike the full web app, it does not use Vercel AI Gateway. Configure `ANTHROPIC_API_KEY` in the environment or Streamlit Secrets; the app has no in-page AI configuration or API-key input. Optional `ANTHROPIC_MODEL` and `ANTHROPIC_BASE_URL` settings can also be provided as environment variables or Streamlit Secrets.
 
 Run locally with Python 3.11 or newer:
 
